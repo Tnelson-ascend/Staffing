@@ -13,7 +13,7 @@
   window.ASCEND_SUPABASE_ANON_KEY = 'sb_publishable_1rfUabvPpffeYGx58WRO0g_gkWRQScY';
 </script>
 <style>
- :root{
+  :root{
     --ink:#044D66;
     --ink-2:#007AC6;
     --paper:#F7FBFC;
@@ -270,6 +270,7 @@ const days = [
     { id:"sat", name:"Saturday", date:"2026-10-17", slots:[]},
     { id:"sun", name:"Sunday", date:"2026-10-18", slots:[
       {id:"sun_asm",label:"4:00\u20135:00 PM All Staff Meeting",start:"16:00",end:"17:00",type:"allstaff"},
+      {id:"sun_attire",label:"11:00 AM\u20134:00 PM Staff Attire Pick-up",start:"11:00",end:"16:00",type:"coverage"},
       {id:"sun_welcome",label:"5:00\u20137:00 PM Welcome Reception (Pods Staffed)",start:"17:00",end:"19:00",type:"coverage"}
     ]},
     { id:"mon", name:"Monday", date:"2026-10-19", slots:[
@@ -286,7 +287,8 @@ const days = [
       {id:"mon_sess_slot_4",label:"2:40 PM\u20133:30 PM Session 4",start:"14:40",end:"15:30",type:"coverage"},
       {id:"mon_break_eco",label:"3:30\u20134:30 PM Break & Ecosystem Content",start:"15:30",end:"16:30",type:"coverage"},
       {id:"mon_sess_slot_5",label:"3:35 PM\u20134:20 PM Session",start:"15:35",end:"16:20",type:"coverage"},
-      {id:"mon_sess_slot_6",label:"4:30 PM\u20135:20 PM Session 5",start:"16:30",end:"17:20",type:"coverage"}
+      {id:"mon_sess_slot_6",label:"4:30 PM\u20135:20 PM Session 5",start:"16:30",end:"17:20",type:"coverage"},
+      {id:"mon_party",label:"6:30\u20138:30 PM Monday Night Party",start:"18:30",end:"20:30",type:"coverage"}
     ]},
     { id:"tue", name:"Tuesday", date:"2026-10-20", slots:[
       {id:"tue_sm",label:"7:30\u20138:00 AM Staff Meeting",start:"07:30",end:"08:00",type:"allstaff"},
@@ -346,6 +348,17 @@ const days = [
     {id:"st_registration_lead", name:"Registration Lead", type:'desk', activeDayIds:['sun','mon','tue','wed'], required:1},
     {id:"st_services_desk", name:"Services Desk", type:'desk', activeDayIds:['mon','tue','wed'], required:15},
     {id:"st_support_hub", name:"Support Hub", type:'desk', activeDayIds:['mon','tue','wed'], required:14},
+    {id:"st_keynote_badge_check", name:"Keynote — Badge/Bracelet Check", type:'other', activeDayIds:['mon'], required:8},
+    {id:"st_keynote_ushers", name:"Keynote — Ushers (front to back)", type:'other', activeDayIds:['mon'], required:6},
+    {id:"st_ecosystem_badge_check", name:"Ecosystem — Front Door Badge Check", type:'other', activeDayIds:['mon','tue','wed'], required:2},
+    {id:"st_staff_attire_pickup", name:"Staff Attire Pick-up (11am–4pm)", type:'other', activeDayIds:['sun'], required:2},
+    {id:"st_welcome_badge_check", name:"Welcome Reception / Exhibitor Load-in Badge Check", type:'other', activeDayIds:['sun'], required:2},
+    {id:"st_wayfinding_day1", name:"Wayfinding — Day 1", type:'other', activeDayIds:['mon'], required:1},
+    {id:"st_wayfinding_day2", name:"Wayfinding — Day 2", type:'other', activeDayIds:['tue'], required:1},
+    {id:"st_party_wayfind_front", name:"MNP — Wayfinding (Front of Hotel)", type:'other', activeDayIds:['mon'], required:2},
+    {id:"st_party_wayfind_back", name:"MNP — Wayfinding (Back of Hotel)", type:'other', activeDayIds:['mon'], required:2},
+    {id:"st_party_wayfind_inside", name:"MNP — Wayfinding (Inside)", type:'other', activeDayIds:['mon'], required:2},
+    {id:"st_party_security_1f", name:"MNP — Security (1st Floor)", type:'other', activeDayIds:['mon'], required:2},
     {id:"sesst_mon_affordable_public_housing_keynote_innovation_to_su", name:"Affordable & Public Housing Keynote: Innovation to Support Communities & Compliance", type:'session', activeDayIds:["mon"], required:2, scanDayId:"mon", scanSlotId:"mon_sess_slot_1", room:"Room 208"},
     {id:"sesst_mon_affordable_public_housing_compliance_updates", name:"Affordable & Public Housing Compliance Updates", type:'session', activeDayIds:["mon"], required:1, scanDayId:"mon", scanSlotId:"mon_sess_slot_2", room:"Room 208"},
     {id:"sesst_mon_industry_trends_and_challenges_in_affordable_publi", name:"Industry Trends and Challenges in Affordable & Public Housing", type:'session', activeDayIds:["mon"], required:1, scanDayId:"mon", scanSlotId:"mon_sess_slot_3", room:"Room 208"},
@@ -936,7 +949,7 @@ const days = [
   Object.keys(POD_PRODUCTS_SEED).forEach(sid=>{
     podProductList[sid] = POD_PRODUCTS_SEED[sid].map(it=>({display:it.display, key:it.key}));
   });
-  return { days, stations, staff, overrides: seedOverrides, scanAssignments:{}, podReadiness:{}, productReadiness, podProductList, activeTab:'setup', activeDayId:'mon', selectedPersonId:null };
+  return { days, stations, staff, overrides: seedOverrides, scanAssignments:{}, wayfindingSlots:[], podReadiness:{}, productReadiness, podProductList, activeTab:'setup', activeDayId:'mon', selectedPersonId:null };
 }
 
 // ---------- state & persistence ----------
@@ -1041,7 +1054,7 @@ const TABS = [
 // starts at CURRENT SEED_VERSION already (via defaultState), so patches
 // only matter for boards that were saved before that patch existed.
 const STATION_DAY_SLOT_MAP = {"sesst_mon_affordable_public_housing_keynote_innovation_to_su":["mon","mon_sess_slot_1"],"sesst_mon_industry_trends_and_challenges_in_affordable_publi":["mon","mon_sess_slot_3"],"sesst_mon_pha_pro_101_applying_the_latest_hud_regulatory_cha":["mon","mon_sess_slot_4"],"sesst_mon_ama_migrating_to_mri_affordable_housing":["mon","mon_sess_slot_6"],"sesst_mon_affordable_housing_101_key_features_to_maximize_yo":["mon","mon_sess_slot_6"],"sesst_mon_pha_pro_101_a_practical_integration_guide_for_pha_":["mon","mon_sess_slot_6"],"sesst_tue_workflow_roundtable_affordable_public_housing":["tue","tue_sess_slot_1"],"sesst_tue_ama_migrating_to_pha_pro":["tue","tue_sess_slot_1"],"sesst_tue_ama_asset_management_accounting_solutions_for_affo":["tue","tue_sess_slot_2"],"sesst_tue_affordable_public_housing_201_adoption_strategies_":["tue","tue_sess_slot_2"],"sesst_tue_campfire_navigating_external_change_internally_for":["tue","tue_sess_slot_2"],"sesst_tue_campfire_optimizing_operations_in_affordable_publi":["tue","tue_sess_slot_4"],"sesst_tue_pic_training_101_secrets_to_understanding_resolvin":["tue","tue_sess_slot_4"],"sesst_tue_pha_pro_101_practical_tips_tricks_hands_on_worksho":["tue","tue_sess_slot_5"],"sesst_wed_staying_compliant_and_preparing_for_what_s_next_bo":["wed","wed_sess_slot_1"],"sesst_wed_legacy_product_updates_tenmast_hab_and_lindsey_sof":["wed","wed_sess_slot_1"],"sesst_wed_affordable_housing_101_live_health_check_demo_with":["wed","wed_sess_slot_2"],"sesst_wed_pic_training_101_strategies_for_effective_data_cle":["wed","wed_sess_slot_2"],"sesst_wed_affordable_housing_201_masterclass_in_key_function":["wed","wed_sess_slot_3"],"sesst_wed_pha_pro_201_leveraging_report_writer_to_manage_you":["wed","wed_sess_slot_3"],"sesst_mon_investment_central_101_integrating_third_party_fin":["mon","mon_sess_slot_3"],"sesst_mon_investment_central_101_portfolio_reporting":["mon","mon_sess_slot_6"],"sesst_tue_investment_central_users_group":["tue","tue_sess_slot_2"],"sesst_tue_investment_central_301_master_data_integration_wit":["tue","tue_sess_slot_4"],"sesst_wed_investment_accounting_201_troubleshooting_real_wor":["wed","wed_sess_slot_1"],"sesst_wed_debt_management_101":["wed","wed_sess_slot_3"],"sesst_mon_ama_onlocation_for_footfall_analytics":["mon","mon_sess_slot_2"],"sesst_mon_angus_201_driving_portfolio_visibility_standardiza":["mon","mon_sess_slot_4"],"sesst_tue_angus_users_group":["tue","tue_sess_slot_2"],"sesst_tue_angus_201_angus_reporting_enhancements":["tue","tue_sess_slot_4"],"sesst_tue_ama_facilities_management_solutions":["tue","tue_sess_slot_4"],"sesst_tue_campfire_the_changing_role_of_property_facilities_":["tue","tue_sess_slot_5"],"sesst_wed_angus_201_end_to_end_coi_process_deep_dive":["wed","wed_sess_slot_1"],"sesst_wed_angus_201_managing_the_inspection_process_in_angus":["wed","wed_sess_slot_2"],"sesst_wed_angus_301_in_depth_exploration_of_data_driven_main":["wed","wed_sess_slot_3"],"sesst_mon_workshop_planning_your_2026_technology_roadmap":["mon","mon_sess_slot_4"],"sesst_tue_invite_only_executive_roundtable_rethinking_operat":["tue","tue_sess_slot_2"],"sesst_mon_mri_agora_platform_it_and_technology_team_deep_div":["mon","mon_sess_slot_2"],"sesst_mon_campfire_moving_ai_from_pilot_to_practice":["mon","mon_sess_slot_2"],"sesst_mon_ama_agora_administration":["mon","mon_sess_slot_3"],"sesst_mon_intro_to_agora_workflow_builder":["mon","mon_sess_slot_3"],"sesst_mon_campfire_governing_ai_across_the_business":["mon","mon_sess_slot_3"],"sesst_mon_agora_intelligence_orchestrator_for_accounting_and":["mon","mon_sess_slot_4"],"sesst_mon_ama_agora_workflow_builder":["mon","mon_sess_slot_4"],"sesst_mon_ama_agora_intelligence":["mon","mon_sess_slot_5"],"sesst_mon_agora_intelligence_orchestrator_for_building_opera":["mon","mon_sess_slot_6"],"sesst_mon_ama_agora_orchestrator":["mon","mon_sess_slot_6"],"sesst_tue_campfire_combatting_fraud_in_leasing_and_best_prac":["tue","tue_sess_slot_1"],"sesst_tue_agora_intelligence_orchestrator_for_renter_engagem":["tue","tue_sess_slot_2"],"sesst_tue_managing_the_agora_platform_admin_deep_dive":["tue","tue_sess_slot_4"],"sesst_tue_agora_intelligence_101_migrating_from_agora_insigh":["tue","tue_sess_slot_5"],"sesst_mon_application_studio_101_configure_personalize_pmx_p":["mon","mon_sess_slot_1"],"sesst_mon_application_studio_101_securely_access_data_create":["mon","mon_sess_slot_2"],"sesst_mon_report_studio_101_introduction_to_report_builder":["mon","mon_sess_slot_3"],"sesst_mon_application_studio_101_migrating_your_personalized":["mon","mon_sess_slot_6"],"sesst_tue_application_studio_101_configure_personalize_pmx_p_2":["tue","tue_sess_slot_1"],"sesst_tue_application_studio_101_securely_access_data_create_2":["tue","tue_sess_slot_2"],"sesst_tue_ama_learn_about_personalizing_pmx_with_application":["tue","tue_sess_slot_3"],"sesst_tue_application_studio_201_build_more_advanced_pmx_con":["tue","tue_sess_slot_5"],"sesst_wed_application_studio_201_data_builder":["wed","wed_sess_slot_1"],"sesst_wed_application_studio_deep_dive_learn_from_your_peers":["wed","wed_sess_slot_2"],"sesst_mon_commercial_keynote_innovation_to_optimize_portfoli":["mon","mon_sess_slot_1"],"sesst_mon_pmx_101_import_export_hands_on_workshop":["mon","mon_sess_slot_1"],"sesst_mon_pmx_cm_101_packets_batches_in_report_gateway_hands":["mon","mon_sess_slot_3"],"sesst_mon_ama_managing_your_payable_leases_with_prolease":["mon","mon_sess_slot_2"],"sesst_mon_latest_greatest_pmx_commercial_management_core_acc":["mon","mon_sess_slot_2"],"sesst_wed_latest_greatest_pmx_commercial_management_core_acc_2":["wed","wed_sess_slot_1"],"sesst_mon_pmx_101_intro_to_sql_hands_on_workshop":["mon","mon_sess_slot_2"],"sesst_mon_campfire_exploring_managed_services_to_scale_lease":["mon","mon_sess_slot_3"],"sesst_mon_commercial_leasing_101_introduction_to_engage_deal":["mon","mon_sess_slot_4"],"sesst_mon_pmx_201_financial_format_best_practices":["mon","mon_sess_slot_3"],"sesst_mon_table_talks_new_pmx_users":["mon","mon_sess_slot_5"],"sesst_mon_pmx_101_budgeting_and_forecasting_best_practices_a":["mon","mon_sess_slot_4"],"sesst_tue_campfire_exploring_workflow_automation_for_account":["tue","tue_sess_slot_2"],"sesst_mon_campfire_exploring_workflow_automation_for_commerc":["mon","mon_sess_slot_6"],"sesst_mon_pmx_201_job_cost_masterclass":["mon","mon_sess_slot_6"],"sesst_tue_pmx_101_import_export_hands_on_workshop_2":["tue","tue_sess_slot_1"],"sesst_tue_workflow_roundtable_accounting_investment_manageme":["tue","tue_sess_slot_1"],"sesst_tue_workflow_roundtable_commercial":["tue","tue_sess_slot_1"],"sesst_tue_ama_new_pmx_x_7_screens":["tue","tue_sess_slot_1"],"sesst_tue_campfire_best_practices_for_configuring_and_managi":["tue","tue_sess_slot_1"],"sesst_tue_prolease_suite_201_advanced_use_cases_and_reportin":["tue","tue_sess_slot_2"],"sesst_tue_table_talks_talking_challenges_in_retail_accountin":["tue","tue_sess_slot_2"],"sesst_tue_ama_pmx_payments":["tue","tue_sess_slot_2"],"sesst_tue_pmx_101_getting_started_with_ai_in_pmx_hands_on_wo":["tue","tue_sess_slot_2"],"sesst_tue_campfire_pmx_updates_and_cloud_migrations":["tue","tue_sess_slot_4"],"sesst_tue_inside_the_partnership_how_benderson_and_mri_reima":["tue","tue_sess_slot_4"],"sesst_tue_contract_intelligence_101_latest_enhancement_to_mc":["tue","tue_sess_slot_4"],"sesst_tue_pmx_301_budgeting_and_forecasting_troubleshooting_":["tue","tue_sess_slot_4"],"sesst_tue_pmx_cm_101_recoveries_best_practices_setup":["tue","tue_sess_slot_5"],"sesst_tue_table_talks_integrating_pmx_and_contract_intellige":["tue","tue_sess_slot_5"],"sesst_tue_ama_engage_tenant_portal":["tue","tue_sess_slot_5"],"sesst_tue_ama_contract_intelligence":["tue","tue_sess_slot_5"],"sesst_tue_pmx_101_best_practices_for_pmx_reporting_and_repor":["tue","tue_sess_slot_5"],"sesst_wed_latest_greatest_pmx_core_accounting_financials":["wed","wed_sess_slot_1"],"sesst_wed_pmx_201_techniques_and_tactics_to_simplify_cam_rec":["wed","wed_sess_slot_2"],"sesst_wed_fixed_asset_accounting_301_advanced_capabilities_d":["wed","wed_sess_slot_2"],"sesst_wed_pmx_201_navigating_the_database_gl_rm_and_cm_schem":["wed","wed_sess_slot_3"],"sesst_wed_pmx_201_tips_and_techniques_for_successful_bank_re":["wed","wed_sess_slot_3"],"sesst_mon_residential_keynote_innovation_to_drive_leasing_re":["mon","mon_sess_slot_1"],"sesst_mon_latest_greatest_engage":["mon","mon_sess_slot_2"],"sesst_mon_engage_101_ai_agents_for_property_teams":["mon","mon_sess_slot_3"],"sesst_mon_latest_greatest_pmx_residential_management":["mon","mon_sess_slot_6"],"sesst_mon_campfire_the_future_of_multifamily_technology_and_":["mon","mon_sess_slot_4"],"sesst_mon_pmx_rm_101_from_resident_ledger_to_general_ledger_":["mon","mon_sess_slot_4"],"sesst_tue_table_talks_residential_property_management_meetup":["tue","tue_sess_slot_3"],"sesst_tue_workflow_roundtable_residential_property_managemen":["tue","tue_sess_slot_1"],"sesst_tue_engage_protect_101_latest_enhancements_to_fight_fr":["tue","tue_sess_slot_4"],"sesst_tue_ama_engage_secure_sign":["tue","tue_sess_slot_4"],"sesst_tue_pmx_201_managing_units_in_pmx_for_market_rate_prop":["tue","tue_sess_slot_4"],"sesst_tue_campfire_resident_retention_strategies":["tue","tue_sess_slot_5"],"sesst_tue_engage_pay_101_formerly_rentpayment_payments_flexi":["tue","tue_sess_slot_5"],"sesst_wed_engage_101_migrating_from_connect_suite_to_the_eng":["wed","wed_sess_slot_1"],"sesst_wed_pmx_rm_101_managing_units_in_pmx_move_in_calendar_":["wed","wed_sess_slot_1"],"sesst_wed_pmx_rm_301_deep_dive_into_tables_and_data_structur":["wed","wed_sess_slot_2"],"sesst_wed_pmx_rm_301_troubleshooting_for_power_users":["wed","wed_sess_slot_3"],"sesst_mon_ama_understanding_your_mri_support_options":["mon","mon_sess_slot_3"],"sesst_mon_ama_mri_certification_program":["mon","mon_sess_slot_4"],"sesst_tue_table_talks_exploring_managed_services_options_ben":["tue","tue_sess_slot_4"],"sesst_mon_campfire_the_changing_landscape_of_retail":["mon","mon_sess_slot_4"],"sesst_mon_table_talks_canadian_users_meetup":["mon","mon_sess_slot_4"],"sesst_mon_affordable_public_housing_compliance_updates":["mon","mon_sess_slot_2"],"sesst_mon_building_operations_fm_keynote_innovation_to_optim":["mon","mon_sess_slot_1"],"sesst_mon_building_operations_fm_understanding_mri_s_innovat":["mon","mon_sess_slot_2"],"sesst_tue_workflow_roundtable_building_operations_fm":["tue","tue_sess_slot_1"],"sesst_mon_invite_only_executive_roundtable_ai_that_s_actuall":["mon","mon_sess_slot_6"],"sesst_mon_hold_for_mri_users_group_1":["mon","mon_sess_slot_6"],"sesst_tue_hold_for_mri_users_group_2":["tue","tue_sess_slot_5"],"sesst_mon_campfire_commercial_amenities_that_pay_off":["mon","mon_sess_slot_6"]};
-const SEED_VERSION = 38;
+const SEED_VERSION = 39;
 const SEED_PATCHES = [
   { version: 23, apply(st){
     // New "Agora Widget Ready" field on every tracked product.
@@ -1991,6 +2004,54 @@ const SEED_PATCHES = [
       st.days.unshift({ id:'sat', name:'Saturday', date:'2026-10-17', slots:[] });
     }
   }},
+  { version: 39, apply(st){
+    // Oct 2026: Tyler — new one-off duties from his planning notes (badge
+    // checks, ushering, wayfinding, the Monday Night Party, Sunday setup
+    // tasks). Added as headcount stations so they're trackable in Setup,
+    // Coverage, and exports, same as pods/desks.
+    //
+    // IMPORTANT LIMITATION, flagged rather than silently worked around: a
+    // station marked active on a day is treated as needed for EVERY
+    // coverage slot that day (that's how pods/desks — staffed all day —
+    // already work). These duties are mostly single-event, not all-day, so
+    // they'll show as "short" across every slot on their day except the one
+    // they're actually for. Don't set anyone's Home Station to one of these
+    // — that would wrongly pull them off their real pod/desk all day.
+    // Instead, use the Fill button on the ONE correct slot column in
+    // Coverage to manually assign people there (a per-slot override, not a
+    // standing Home Station). Required counts below are placeholders where
+    // Tyler didn't give an exact number yet — adjust in Setup.
+    const addStation = (s)=>{ if(!st.stations.find(x=>x.id===s.id)) st.stations.push(s); };
+    const addSlot = (dayId, slot)=>{
+      const d = st.days.find(x=>x.id===dayId);
+      if(d && !d.slots.find(x=>x.id===slot.id)) d.slots.push(slot);
+    };
+
+    // New slots for events that don't match any existing time window.
+    addSlot('mon', {id:'mon_party', label:'6:30–8:30 PM Monday Night Party', start:'18:30', end:'20:30', type:'coverage'});
+    addSlot('sun', {id:'sun_attire', label:'11:00 AM–4:00 PM Staff Attire Pick-up', start:'11:00', end:'16:00', type:'coverage'});
+
+    // Keynote (Monday morning general session).
+    addStation({id:'st_keynote_badge_check', name:'Keynote — Badge/Bracelet Check', type:'other', activeDayIds:['mon'], required:8});
+    addStation({id:'st_keynote_ushers', name:'Keynote — Ushers (front to back)', type:'other', activeDayIds:['mon'], required:6});
+
+    // Ecosystem front door.
+    addStation({id:'st_ecosystem_badge_check', name:'Ecosystem — Front Door Badge Check', type:'other', activeDayIds:['mon','tue','wed'], required:2});
+
+    // Sunday.
+    addStation({id:'st_staff_attire_pickup', name:'Staff Attire Pick-up (11am–4pm)', type:'other', activeDayIds:['sun'], required:2});
+    addStation({id:'st_welcome_badge_check', name:'Welcome Reception / Exhibitor Load-in Badge Check', type:'other', activeDayIds:['sun'], required:2});
+
+    // General wayfinding, placeholder headcount — Tyler to size these.
+    addStation({id:'st_wayfinding_day1', name:'Wayfinding — Day 1', type:'other', activeDayIds:['mon'], required:1});
+    addStation({id:'st_wayfinding_day2', name:'Wayfinding — Day 2', type:'other', activeDayIds:['tue'], required:1});
+
+    // Monday Night Party.
+    addStation({id:'st_party_wayfind_front', name:'MNP — Wayfinding (Front of Hotel)', type:'other', activeDayIds:['mon'], required:2});
+    addStation({id:'st_party_wayfind_back', name:'MNP — Wayfinding (Back of Hotel)', type:'other', activeDayIds:['mon'], required:2});
+    addStation({id:'st_party_wayfind_inside', name:'MNP — Wayfinding (Inside)', type:'other', activeDayIds:['mon'], required:2});
+    addStation({id:'st_party_security_1f', name:'MNP — Security (1st Floor)', type:'other', activeDayIds:['mon'], required:2});
+  }},
 ];
 function applySeedPatches(st){
   const have = st.seedVersion || 0;
@@ -2395,6 +2456,41 @@ function getPersonScanDuties(personId){
   out.sort((a,b)=> (a.window.dayId+a.window.startMin) < (b.window.dayId+b.window.startMin) ? -1 : 1);
   return out;
 }
+function getPersonWayfindingDuties(personId){
+  return (state.wayfindingSlots||[]).filter(s=>s.assignedId===personId);
+}
+// Null if the slot doesn't have both a start and end time set yet (can't
+// check conflicts against an undefined window).
+function getWayfindingWindow(slot){
+  if(!slot || !slot.dayId || !slot.start || !slot.end) return null;
+  const startMin = startMinutes(slot.start), endMin = startMinutes(slot.end);
+  if(endMin<=startMin) return null; // malformed (e.g. end typed before start)
+  return { dayId: slot.dayId, startMin, endMin };
+}
+function isWayfindingDuringWindow(personId, dayId, startMin, endMin, excludeSlotId){
+  for(const s of (state.wayfindingSlots||[])){
+    if(s.id===excludeSlotId) continue;
+    if(s.assignedId!==personId) continue;
+    const w = getWayfindingWindow(s);
+    if(w && w.dayId===dayId && w.startMin<endMin && w.endMin>startMin) return true;
+  }
+  return false;
+}
+// Eligibility for one wayfinding slot, mirroring getScannerCandidates: flags
+// anyone already presenting, already scanning, or already assigned to
+// another overlapping wayfinding slot at the same time. If the slot has no
+// time set yet there's nothing to check conflicts against, so everyone
+// marked "Way Finder?" comes back eligible.
+function getWayfindingCandidates(slot){
+  const w = getWayfindingWindow(slot);
+  return state.staff.filter(p=>p.canWayfind).map(p=>{
+    if(!w) return { person:p, eligible:true, presenting:false, scanning:false, wayfindingElsewhere:false };
+    const presenting = isPresentingDuringWindow(p.id, w.dayId, w.startMin, w.endMin);
+    const scanning = isScanningDuringWindow(p.id, w.dayId, w.startMin, w.endMin);
+    const wayfindingElsewhere = isWayfindingDuringWindow(p.id, w.dayId, w.startMin, w.endMin, slot.id);
+    return { person:p, eligible: !presenting && !scanning && !wayfindingElsewhere, presenting, scanning, wayfindingElsewhere };
+  }).sort((a,b)=> (a.eligible===b.eligible?0:a.eligible?-1:1) || a.person.name.localeCompare(b.person.name));
+}
 
 function minToHHMM(total){
   let m = ((total%1440)+1440)%1440;
@@ -2422,6 +2518,16 @@ function getScheduleRows(personId, includeAll){
       slotLabel: fmtMin(window.startMin)+'\u2013'+fmtMin(window.endMin)+' Scan Duty',
       text: 'Scanning \u2014 '+station.name+(station.room?' \u2014 '+station.room:''), sortMin: window.startMin, isScan:true,
       start: minToHHMM(window.startMin), end: minToHHMM(window.endMin), color:CATEGORY_COLORS.session
+    });
+  });
+  getPersonWayfindingDuties(personId).forEach(s=>{
+    const d = getDay(s.dayId);
+    if(!d) return;
+    const timeLabel = (s.start||s.end) ? ((s.start||'?')+'–'+(s.end||'?')+' ') : '';
+    entries.push({
+      dayId: s.dayId, dayName: d.name,
+      slotLabel: timeLabel+'Wayfinding', text: 'Wayfinding'+(s.note?' — '+s.note:''),
+      sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.other||CATEGORY_COLORS.session
     });
   });
   entries.sort((a,b)=> (DAY_ORDER_IDX[a.dayId]-DAY_ORDER_IDX[b.dayId]) || (a.sortMin-b.sortMin));
@@ -3002,25 +3108,36 @@ function renderScanning(){
   });
 }
 
-// ---------- WAY FINDERS & REGISTRATION (simple eligibility lists) ----------
-// Deliberately minimal for now, by design: just two independent checkboxes
-// ("Way Finder?" / "Registration?") set per person in Setup, and this tab
-// lists who's marked for each. No time windows or auto-assignment yet —
-// Tyler plans to add scheduling logic for these later, same shape as
-// Scanning once the duty hours are defined.
+// ---------- WAY FINDERS & REGISTRATION ----------
+// Registration stays a simple eligibility list (unchanged). Wayfinding now
+// also gets real slots — each a day + time window + a free-text note
+// describing where/what ("Front of hotel", "2nd floor near elevators",
+// etc.) + an assigned person — built the same shape as the Scanning tab's
+// per-session assignment, but free-form instead of tied to a session list,
+// since wayfinding posts aren't fixed ahead of time the way sessions are.
+// No conflict-checking against someone's other duties yet (Scanning has
+// that; this doesn't) — keep an eye out for double-booking yourself for now.
+function getWayfindingSlots(){
+  if(!Array.isArray(state.wayfindingSlots)) state.wayfindingSlots = [];
+  return state.wayfindingSlots;
+}
 function renderWayfindReg(){
   const wayfinders = state.staff.filter(p=>p.canWayfind).sort(byFirstName);
   const registration = state.staff.filter(p=>p.canRegistration).sort(byFirstName);
   const bothCount = state.staff.filter(p=>p.canWayfind && p.canRegistration).length;
+  const slots = getWayfindingSlots();
+  const assignedCounts = {};
+  slots.forEach(s=>{ if(s.assignedId) assignedCounts[s.assignedId] = (assignedCounts[s.assignedId]||0)+1; });
+  const unfilledSlots = slots.filter(s=>!s.assignedId).length;
 
-  const listBlock = (title, people, emptyMsg) => `
+  const listBlock = (title, people, emptyMsg, showCounts) => `
     <div class="panel" style="flex:1; min-width:280px">
       <div class="flex-between"><h2 style="margin-bottom:0">${title}</h2><span class="pill">${people.length}</span></div>
-      <div class="scrolly" style="max-height:480px; margin-top:8px">
-        ${people.length ? `<table><thead><tr><th>Name</th><th>Department</th><th>Home Station</th></tr></thead><tbody>
+      <div class="scrolly" style="max-height:360px; margin-top:8px">
+        ${people.length ? `<table><thead><tr><th>Name</th><th>Department</th><th>Home Station</th>${showCounts?'<th>Wayfinding slots</th>':''}</tr></thead><tbody>
           ${people.map(p=>{
             const hs = p.homeStationId ? getStation(p.homeStationId) : null;
-            return `<tr><td>${esc(p.name)}</td><td>${esc(p.dept||'')}</td><td>${hs?esc(hs.name):'<span class="muted">—</span>'}</td></tr>`;
+            return `<tr><td>${esc(p.name)}</td><td>${esc(p.dept||'')}</td><td>${hs?esc(hs.name):'<span class="muted">—</span>'}</td>${showCounts?`<td class="mono">${assignedCounts[p.id]||0}</td>`:''}</tr>`;
           }).join('')}
         </tbody></table>` : `<div class="muted">${emptyMsg}</div>`}
       </div>
@@ -3028,13 +3145,73 @@ function renderWayfindReg(){
   `;
 
   bodyEl.innerHTML = `
-    <div class="note">Eligibility lists only, for now — mark people as "Way Finder?" or "Registration?" in Setup → Staff Roster, and they'll show up here. Someone can be marked for both, one, or neither. No duty hours or auto-assignment yet.</div>
-    <div class="row" style="gap:16px; align-items:flex-start; flex-wrap:wrap">
-      ${listBlock('Way Finders', wayfinders, 'Nobody marked as a Way Finder yet — check the box in Setup → Staff Roster.')}
-      ${listBlock('Registration', registration, 'Nobody marked for Registration yet — check the box in Setup → Staff Roster.')}
+    <div class="panel">
+      <div class="flex-between" style="margin-bottom:6px">
+        <h2 style="margin-bottom:0">Wayfinding Assignments</h2>
+        <div class="row">
+          <span class="pill">${unfilledSlots} of ${slots.length} slots unassigned</span>
+          <button class="btn sm ghost" id="wf-add-slot">+ Add wayfinding slot</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-bottom:8px">Each row is one wayfinding post. Set the day/time, type a note describing where it is or what it covers, and assign anyone marked "Way Finder?" below. Once a slot has both a start and end time, the Assigned list only offers people who are free then — not already presenting, scanning, or posted at another wayfinding slot that overlaps. Slots with no time set yet show everyone, since there's nothing to check against.</div>
+      <div class="scrollx scrolly">
+        <table><thead><tr><th>Day</th><th>Start</th><th>End</th><th>Note</th><th>Assigned</th><th></th></tr></thead>
+        <tbody>${slots.map(s=>{
+          const candidates = getWayfindingCandidates(s);
+          const hasWindow = !!getWayfindingWindow(s);
+          const assignedId = s.assignedId || '';
+          const assignedPerson = assignedId ? getStaff(assignedId) : null;
+          const assignedIneligible = hasWindow && assignedPerson && !candidates.find(c=>c.person.id===assignedId && c.eligible);
+          let conflictNote = '';
+          if(assignedIneligible){
+            const c = candidates.find(c=>c.person.id===assignedId);
+            if(c && c.presenting) conflictNote = ' (presenting then)';
+            else if(c && c.scanning) conflictNote = ' (scanning then)';
+            else if(c && c.wayfindingElsewhere) conflictNote = ' (posted elsewhere then)';
+            else conflictNote = ' (conflict)';
+          }
+          return `
+          <tr>
+            <td><select data-wffield="dayId" data-wfid="${s.id}">
+              ${state.days.map(d=>`<option value="${d.id}" ${s.dayId===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}
+            </select></td>
+            <td><input type="text" data-wffield="start" data-wfid="${s.id}" value="${esc(s.start||'')}" placeholder="e.g. 10:00" style="width:80px"></td>
+            <td><input type="text" data-wffield="end" data-wfid="${s.id}" value="${esc(s.end||'')}" placeholder="e.g. 11:00" style="width:80px"></td>
+            <td><input type="text" data-wffield="note" data-wfid="${s.id}" value="${esc(s.note||'')}" placeholder="Where / what this post covers" style="width:320px"></td>
+            <td><select data-wffield="assignedId" data-wfid="${s.id}">
+              <option value="">— unassigned —</option>
+              ${assignedPerson ? `<option value="${assignedPerson.id}" selected>${esc(assignedPerson.name)}${conflictNote}</option>` : ''}
+              ${candidates.filter(c=>c.eligible && c.person.id!==assignedId).map(c=>`<option value="${c.person.id}">${esc(c.person.name)}</option>`).join('')}
+            </select></td>
+            <td><button class="btn sm ghost" data-wf-remove="${s.id}">Remove</button></td>
+          </tr>
+        `;
+        }).join('') || `<tr><td colspan="6" class="muted">No wayfinding slots yet — click "+ Add wayfinding slot" to create one.</td></tr>`}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="row" style="gap:16px; align-items:flex-start; flex-wrap:wrap; margin-top:16px">
+      ${listBlock('Way Finders', wayfinders, 'Nobody marked as a Way Finder yet — check the box in Setup → Staff Roster.', true)}
+      ${listBlock('Registration', registration, 'Nobody marked for Registration yet — check the box in Setup → Staff Roster.', false)}
     </div>
     ${bothCount ? `<div class="muted" style="margin-top:10px">${bothCount} ${bothCount===1?'person is':'people are'} marked for both.</div>` : ''}
   `;
+
+  document.getElementById('wf-add-slot').onclick = ()=>update(st=>{
+    if(!Array.isArray(st.wayfindingSlots)) st.wayfindingSlots = [];
+    st.wayfindingSlots.push({ id:uid('wf'), dayId: st.activeDayId || (st.days[0] && st.days[0].id) || '', start:'', end:'', note:'', assignedId:'' });
+  });
+  bodyEl.querySelectorAll('[data-wffield]').forEach(el=>{
+    el.onchange = ()=>update(st=>{
+      const s = (st.wayfindingSlots||[]).find(x=>x.id===el.dataset.wfid);
+      if(s) s[el.dataset.wffield] = el.value;
+    });
+  });
+  bodyEl.querySelectorAll('[data-wf-remove]').forEach(b=>{
+    b.onclick = ()=>update(st=>{
+      st.wayfindingSlots = (st.wayfindingSlots||[]).filter(x=>x.id!==b.dataset.wfRemove);
+    });
+  });
 }
 
 // ---------- POD READINESS TAB ----------
