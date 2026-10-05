@@ -13,7 +13,7 @@
   window.ASCEND_SUPABASE_ANON_KEY = 'sb_publishable_1rfUabvPpffeYGx58WRO0g_gkWRQScY';
 </script>
 <style>
- :root{
+:root{
     --ink:#044D66;
     --ink-2:#007AC6;
     --paper:#F7FBFC;
@@ -2353,6 +2353,7 @@ function isTopicMatch(person, sessionTitle){
   const title = sessionTitle.toLowerCase();
   return stationTopicWords(station).some(w=>title.includes(w));
 }
+function isMarketingScanner(p){ return (p.dept||'')==='Marketing'; }
 function hasLeftBeforeWindow(p, w){
   if(w.dayId!=='wed') return false;
   if(p.wedAvailable===false) return true; // gone before Wednesday entirely
@@ -2370,8 +2371,15 @@ function getScannerCandidates(station){
     const scanning = isScanningDuringWindow(p.id, w.dayId, w.startMin, w.endMin, station.id);
     const leftAlready = hasLeftBeforeWindow(p, w);
     const topicMatch = isTopicMatch(p, station.name);
-    return { person:p, eligible: !presenting && !scanning && !leftAlready, presenting, scanning, leftAlready, topicMatch };
-  }).sort((a,b)=> (a.eligible===b.eligible?0:a.eligible?-1:1) || (a.topicMatch===b.topicMatch?0:a.topicMatch?-1:1) || a.person.name.localeCompare(b.person.name));
+    const marketing = isMarketingScanner(p);
+    return { person:p, eligible: !presenting && !scanning && !leftAlready, presenting, scanning, leftAlready, topicMatch, marketing };
+  }).sort((a,b)=>
+    (a.eligible===b.eligible?0:a.eligible?-1:1) ||
+    // Marketing staff are the primary scanner pool; everyone else is backup.
+    (a.marketing===b.marketing?0:a.marketing?-1:1) ||
+    (a.topicMatch===b.topicMatch?0:a.topicMatch?-1:1) ||
+    a.person.name.localeCompare(b.person.name)
+  );
 }
 // Used everywhere a person's schedule is shown (Individual Schedules, Staff
 // View, PDF, ICS) so scanning duty shows up alongside their normal assignments.
@@ -2883,10 +2891,11 @@ function renderScanning(){
   const scanCounts = {};
   Object.values(state.scanAssignments).forEach(pid=>{ scanCounts[pid] = (scanCounts[pid]||0) + 1; });
   const scannersWithDuty = scannerPool.filter(p=>scanCounts[p.id] > 0).length;
-  const sortedScannerPool = scannerPool.slice().sort(byFirstName);
+  const marketingScanners = scannerPool.filter(isMarketingScanner).sort(byFirstName);
+  const backupScanners = scannerPool.filter(p=>!isMarketingScanner(p)).sort(byFirstName);
 
   bodyEl.innerHTML = `
-    <div class="note">Every session needs one scanner covering the 15 minutes before it starts through 15 minutes after (30 min total). Only people marked "Scanner?" in Setup show up as candidates here, and anyone already presenting or scanning something else in that window is automatically excluded. \u2605 marks candidates whose home pod suggests they'd know this session's subject matter — Auto-assign prefers these people first when it can.</div>
+    <div class="note">Every session needs one scanner covering the 15 minutes before it starts through 15 minutes after (30 min total). Only people marked "Scanner?" in Setup show up as candidates here, and anyone already presenting or scanning something else in that window is automatically excluded. \u2726 marks Marketing staff, the primary scanner pool — Auto-assign fills from them first and only falls back to everyone else as backup once Marketing candidates are unavailable. \u2605 marks candidates whose home pod suggests they'd know this session's subject matter, used as a tiebreaker within each pool.</div>
     <div class="flex-between" style="margin-bottom:10px">
       <div class="day-tabs" id="scan-daytabs" style="margin-bottom:0"></div>
       <div class="row">
@@ -2911,7 +2920,7 @@ function renderScanning(){
             <select data-scan-station="${s.id}">
               <option value="">\u2014 unassigned \u2014</option>
               ${assignedPerson ? `<option value="${assignedPerson.id}" selected>${esc(assignedPerson.name)}${assignedIneligible?' (no longer eligible \u2014 conflict)':''}</option>` : ''}
-              ${candidates.filter(c=>c.eligible && c.person.id!==assignedId).map(c=>`<option value="${c.person.id}">${c.topicMatch?'\u2605 ':''}${esc(c.person.name)}</option>`).join('')}
+              ${candidates.filter(c=>c.eligible && c.person.id!==assignedId).map(c=>`<option value="${c.person.id}">${c.marketing?'\u2726 ':''}${c.topicMatch?'\u2605 ':''}${esc(c.person.name)}${c.marketing?' (Marketing)':''}</option>`).join('')}
             </select>
           </td>
         </tr>`;
@@ -2925,13 +2934,24 @@ function renderScanning(){
     </div>
     <div class="scrollx scrolly">
       <table><thead><tr><th>Scanner</th><th>Scan duties assigned (all days)</th></tr></thead>
-      <tbody>${sortedScannerPool.map(p=>{
-        const count = scanCounts[p.id] || 0;
-        return `<tr>
-          <td>${esc(p.name)}</td>
-          <td class="mono">${count}${count===0?' <span class="muted" style="font-weight:400">(none yet)</span>':''}</td>
-        </tr>`;
-      }).join('') || `<tr><td colspan="2" class="muted">No one is marked as a scanner yet — set that in Setup.</td></tr>`}
+      <tbody>
+        ${marketingScanners.length ? `<tr><td colspan="2" class="muted" style="font-weight:700">✦ Marketing (primary pool)</td></tr>` : ''}
+        ${marketingScanners.map(p=>{
+          const count = scanCounts[p.id] || 0;
+          return `<tr>
+            <td>${esc(p.name)}</td>
+            <td class="mono">${count}${count===0?' <span class="muted" style="font-weight:400">(none yet)</span>':''}</td>
+          </tr>`;
+        }).join('')}
+        ${backupScanners.length ? `<tr><td colspan="2" class="muted" style="font-weight:700">Backup (other departments)</td></tr>` : ''}
+        ${backupScanners.map(p=>{
+          const count = scanCounts[p.id] || 0;
+          return `<tr>
+            <td>${esc(p.name)}</td>
+            <td class="mono">${count}${count===0?' <span class="muted" style="font-weight:400">(none yet)</span>':''}</td>
+          </tr>`;
+        }).join('')}
+        ${scannerPool.length===0 ? `<tr><td colspan="2" class="muted">No one is marked as a scanner yet — set that in Setup.</td></tr>` : ''}
       </tbody></table>
     </div>
   `;
@@ -2960,6 +2980,10 @@ function renderScanning(){
       const cands = getScannerCandidates(s).filter(c=>c.eligible);
       if(!cands.length) return;
       cands.sort((a,b)=>
+        // Marketing staff are the primary scanner pool; everyone else is backup
+        // and should only be picked once marketing candidates are exhausted
+        // or unavailable for this session.
+        (a.marketing===b.marketing?0:a.marketing?-1:1) ||
         (a.topicMatch===b.topicMatch?0:a.topicMatch?-1:1) ||
         (usage[a.person.id]||0)-(usage[b.person.id]||0) ||
         a.person.name.localeCompare(b.person.name)
