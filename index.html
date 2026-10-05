@@ -13,7 +13,7 @@
   window.ASCEND_SUPABASE_ANON_KEY = 'sb_publishable_1rfUabvPpffeYGx58WRO0g_gkWRQScY';
 </script>
 <style>
-:root{
+ :root{
     --ink:#044D66;
     --ink-2:#007AC6;
     --paper:#F7FBFC;
@@ -2901,6 +2901,7 @@ function renderScanning(){
       <div class="row">
         <span class="pill">${scannerPool.length} eligible scanners</span>
         <span class="pill">${totalUnassigned} of ${allSessions.length} sessions unassigned</span>
+        <button class="btn sm ghost" id="scan-clearall">Clear all assignments</button>
         <button class="btn sm amber" id="scan-autoassign">Auto-assign unfilled</button>
       </div>
     </div>
@@ -2965,6 +2966,12 @@ function renderScanning(){
       else delete st.scanAssignments[sel.dataset.scanStation];
     });
   });
+  document.getElementById('scan-clearall').onclick = ()=>{
+    customConfirm(`This unassigns all ${allSessions.length - totalUnassigned} currently-assigned scan duties, across every day, so you can re-run Auto-assign from scratch. This can't be undone. Continue?`, (ok)=>{
+      if(!ok) return;
+      update(st=>{ st.scanAssignments = {}; });
+    }, 'Clear all scan assignments');
+  };
   document.getElementById('scan-autoassign').onclick = ()=>update(st=>{
     const sessions = st.stations.filter(s=>s.type==='session' && s.scanDayId && s.scanSlotId).sort((a,b)=>{
       const da = dayOrder[a.scanDayId]-dayOrder[b.scanDayId];
