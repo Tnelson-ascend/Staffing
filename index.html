@@ -13,7 +13,7 @@
   window.ASCEND_SUPABASE_ANON_KEY = 'sb_publishable_1rfUabvPpffeYGx58WRO0g_gkWRQScY';
 </script>
 <style>
-  :root{
+ :root{
     --ink:#044D66;
     --ink-2:#007AC6;
     --paper:#F7FBFC;
@@ -2199,7 +2199,7 @@ function assignmentLabel(a){
   if(!a) return '—';
   if(a.type==='allstaff') return a.label;
   if(a.type==='break') return 'Break';
-  if(a.type==='free') return 'Free';
+  if(a.type==='free') return 'Free / Bench';
   if(a.type==='station'){
     const s=getStation(a.stationId);
     if(!s) return '—';
@@ -2878,6 +2878,13 @@ function renderScanning(){
   });
   const totalUnassigned = allSessions.filter(s=>!state.scanAssignments[s.id]).length;
 
+  // Count how many scan duties each eligible scanner currently holds,
+  // across all days (not just the day currently showing in the table above).
+  const scanCounts = {};
+  Object.values(state.scanAssignments).forEach(pid=>{ scanCounts[pid] = (scanCounts[pid]||0) + 1; });
+  const scannersWithDuty = scannerPool.filter(p=>scanCounts[p.id] > 0).length;
+  const sortedScannerPool = scannerPool.slice().sort(byFirstName);
+
   bodyEl.innerHTML = `
     <div class="note">Every session needs one scanner covering the 15 minutes before it starts through 15 minutes after (30 min total). Only people marked "Scanner?" in Setup show up as candidates here, and anyone already presenting or scanning something else in that window is automatically excluded. \u2605 marks candidates whose home pod suggests they'd know this session's subject matter — Auto-assign prefers these people first when it can.</div>
     <div class="flex-between" style="margin-bottom:10px">
@@ -2909,6 +2916,22 @@ function renderScanning(){
           </td>
         </tr>`;
       }).join('') || `<tr><td colspan="3" class="muted">No sessions on this day.</td></tr>`}
+      </tbody></table>
+    </div>
+
+    <div class="flex-between" style="margin:18px 0 10px">
+      <h3 style="margin:0">Scanners</h3>
+      <span class="pill">${scannersWithDuty} of ${scannerPool.length} scanners assigned at least one session</span>
+    </div>
+    <div class="scrollx scrolly">
+      <table><thead><tr><th>Scanner</th><th>Scan duties assigned (all days)</th></tr></thead>
+      <tbody>${sortedScannerPool.map(p=>{
+        const count = scanCounts[p.id] || 0;
+        return `<tr>
+          <td>${esc(p.name)}</td>
+          <td class="mono">${count}${count===0?' <span class="muted" style="font-weight:400">(none yet)</span>':''}</td>
+        </tr>`;
+      }).join('') || `<tr><td colspan="2" class="muted">No one is marked as a scanner yet — set that in Setup.</td></tr>`}
       </tbody></table>
     </div>
   `;
