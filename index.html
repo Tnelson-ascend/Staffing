@@ -2274,7 +2274,7 @@ function getDay(dayId){ return state.days.find(d=>d.id===dayId); }
 function getStation(id){ return state.stations.find(s=>s.id===id); }
 // Same color language as the Excel export: pods green, sessions orange,
 // Support Hub purple, Services Desk blue. Everything else stays uncolored.
-const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE' };
+const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE', wayfinding:'#F8CBAD' };
 function getCategoryColor(station){
   if(!station) return null;
   if(station.type==='pod') return CATEGORY_COLORS.pod;
@@ -2587,7 +2587,7 @@ function getScheduleRows(personId, includeAll){
     entries.push({
       dayId: s.dayId, dayName: d.name,
       slotLabel: timeLabel+'Wayfinding', text: 'Wayfinding'+(s.note?' — '+s.note:''),
-      sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.other||CATEGORY_COLORS.session
+      sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.other||CATEGORY_COLORS.wayfinding
     });
   });
   entries.sort((a,b)=> (DAY_ORDER_IDX[a.dayId]-DAY_ORDER_IDX[b.dayId]) || (a.sortMin-b.sortMin));
