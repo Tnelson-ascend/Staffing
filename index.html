@@ -949,7 +949,7 @@ const days = [
   Object.keys(POD_PRODUCTS_SEED).forEach(sid=>{
     podProductList[sid] = POD_PRODUCTS_SEED[sid].map(it=>({display:it.display, key:it.key}));
   });
-  return { days, stations, staff, overrides: seedOverrides, scanAssignments:{}, wayfindingSlots:[], podReadiness:{}, productReadiness, podProductList, activeTab:'setup', activeDayId:'mon', selectedPersonId:null };
+  return { days, stations, staff, overrides: seedOverrides, scanAssignments:{}, wayfindingSlots:[], partnerSessions:[], partnerPlans:{}, podReadiness:{}, productReadiness, podProductList, activeTab:'setup', activeDayId:'mon', selectedPersonId:null };
 }
 
 // ---------- state & persistence ----------
@@ -1041,6 +1041,7 @@ const TABS = [
   {id:'coverage', label:'Coverage'},
   {id:'scanning', label:'Scanning'},
   {id:'wayfind_reg', label:'Way Finders & Registration'},
+  {id:'partners', label:'Partner Sessions'},
   {id:'people', label:'Individual Schedules'},
   {id:'readiness', label:'Pod Readiness'},
   {id:'export', label:'Export'},
@@ -1054,7 +1055,7 @@ const TABS = [
 // starts at CURRENT SEED_VERSION already (via defaultState), so patches
 // only matter for boards that were saved before that patch existed.
 const STATION_DAY_SLOT_MAP = {"sesst_mon_affordable_public_housing_keynote_innovation_to_su":["mon","mon_sess_slot_1"],"sesst_mon_industry_trends_and_challenges_in_affordable_publi":["mon","mon_sess_slot_3"],"sesst_mon_pha_pro_101_applying_the_latest_hud_regulatory_cha":["mon","mon_sess_slot_4"],"sesst_mon_ama_migrating_to_mri_affordable_housing":["mon","mon_sess_slot_6"],"sesst_mon_affordable_housing_101_key_features_to_maximize_yo":["mon","mon_sess_slot_6"],"sesst_mon_pha_pro_101_a_practical_integration_guide_for_pha_":["mon","mon_sess_slot_6"],"sesst_tue_workflow_roundtable_affordable_public_housing":["tue","tue_sess_slot_1"],"sesst_tue_ama_migrating_to_pha_pro":["tue","tue_sess_slot_1"],"sesst_tue_ama_asset_management_accounting_solutions_for_affo":["tue","tue_sess_slot_2"],"sesst_tue_affordable_public_housing_201_adoption_strategies_":["tue","tue_sess_slot_2"],"sesst_tue_campfire_navigating_external_change_internally_for":["tue","tue_sess_slot_2"],"sesst_tue_campfire_optimizing_operations_in_affordable_publi":["tue","tue_sess_slot_4"],"sesst_tue_pic_training_101_secrets_to_understanding_resolvin":["tue","tue_sess_slot_4"],"sesst_tue_pha_pro_101_practical_tips_tricks_hands_on_worksho":["tue","tue_sess_slot_5"],"sesst_wed_staying_compliant_and_preparing_for_what_s_next_bo":["wed","wed_sess_slot_1"],"sesst_wed_legacy_product_updates_tenmast_hab_and_lindsey_sof":["wed","wed_sess_slot_1"],"sesst_wed_affordable_housing_101_live_health_check_demo_with":["wed","wed_sess_slot_2"],"sesst_wed_pic_training_101_strategies_for_effective_data_cle":["wed","wed_sess_slot_2"],"sesst_wed_affordable_housing_201_masterclass_in_key_function":["wed","wed_sess_slot_3"],"sesst_wed_pha_pro_201_leveraging_report_writer_to_manage_you":["wed","wed_sess_slot_3"],"sesst_mon_investment_central_101_integrating_third_party_fin":["mon","mon_sess_slot_3"],"sesst_mon_investment_central_101_portfolio_reporting":["mon","mon_sess_slot_6"],"sesst_tue_investment_central_users_group":["tue","tue_sess_slot_2"],"sesst_tue_investment_central_301_master_data_integration_wit":["tue","tue_sess_slot_4"],"sesst_wed_investment_accounting_201_troubleshooting_real_wor":["wed","wed_sess_slot_1"],"sesst_wed_debt_management_101":["wed","wed_sess_slot_3"],"sesst_mon_ama_onlocation_for_footfall_analytics":["mon","mon_sess_slot_2"],"sesst_mon_angus_201_driving_portfolio_visibility_standardiza":["mon","mon_sess_slot_4"],"sesst_tue_angus_users_group":["tue","tue_sess_slot_2"],"sesst_tue_angus_201_angus_reporting_enhancements":["tue","tue_sess_slot_4"],"sesst_tue_ama_facilities_management_solutions":["tue","tue_sess_slot_4"],"sesst_tue_campfire_the_changing_role_of_property_facilities_":["tue","tue_sess_slot_5"],"sesst_wed_angus_201_end_to_end_coi_process_deep_dive":["wed","wed_sess_slot_1"],"sesst_wed_angus_201_managing_the_inspection_process_in_angus":["wed","wed_sess_slot_2"],"sesst_wed_angus_301_in_depth_exploration_of_data_driven_main":["wed","wed_sess_slot_3"],"sesst_mon_workshop_planning_your_2026_technology_roadmap":["mon","mon_sess_slot_4"],"sesst_tue_invite_only_executive_roundtable_rethinking_operat":["tue","tue_sess_slot_2"],"sesst_mon_mri_agora_platform_it_and_technology_team_deep_div":["mon","mon_sess_slot_2"],"sesst_mon_campfire_moving_ai_from_pilot_to_practice":["mon","mon_sess_slot_2"],"sesst_mon_ama_agora_administration":["mon","mon_sess_slot_3"],"sesst_mon_intro_to_agora_workflow_builder":["mon","mon_sess_slot_3"],"sesst_mon_campfire_governing_ai_across_the_business":["mon","mon_sess_slot_3"],"sesst_mon_agora_intelligence_orchestrator_for_accounting_and":["mon","mon_sess_slot_4"],"sesst_mon_ama_agora_workflow_builder":["mon","mon_sess_slot_4"],"sesst_mon_ama_agora_intelligence":["mon","mon_sess_slot_5"],"sesst_mon_agora_intelligence_orchestrator_for_building_opera":["mon","mon_sess_slot_6"],"sesst_mon_ama_agora_orchestrator":["mon","mon_sess_slot_6"],"sesst_tue_campfire_combatting_fraud_in_leasing_and_best_prac":["tue","tue_sess_slot_1"],"sesst_tue_agora_intelligence_orchestrator_for_renter_engagem":["tue","tue_sess_slot_2"],"sesst_tue_managing_the_agora_platform_admin_deep_dive":["tue","tue_sess_slot_4"],"sesst_tue_agora_intelligence_101_migrating_from_agora_insigh":["tue","tue_sess_slot_5"],"sesst_mon_application_studio_101_configure_personalize_pmx_p":["mon","mon_sess_slot_1"],"sesst_mon_application_studio_101_securely_access_data_create":["mon","mon_sess_slot_2"],"sesst_mon_report_studio_101_introduction_to_report_builder":["mon","mon_sess_slot_3"],"sesst_mon_application_studio_101_migrating_your_personalized":["mon","mon_sess_slot_6"],"sesst_tue_application_studio_101_configure_personalize_pmx_p_2":["tue","tue_sess_slot_1"],"sesst_tue_application_studio_101_securely_access_data_create_2":["tue","tue_sess_slot_2"],"sesst_tue_ama_learn_about_personalizing_pmx_with_application":["tue","tue_sess_slot_3"],"sesst_tue_application_studio_201_build_more_advanced_pmx_con":["tue","tue_sess_slot_5"],"sesst_wed_application_studio_201_data_builder":["wed","wed_sess_slot_1"],"sesst_wed_application_studio_deep_dive_learn_from_your_peers":["wed","wed_sess_slot_2"],"sesst_mon_commercial_keynote_innovation_to_optimize_portfoli":["mon","mon_sess_slot_1"],"sesst_mon_pmx_101_import_export_hands_on_workshop":["mon","mon_sess_slot_1"],"sesst_mon_pmx_cm_101_packets_batches_in_report_gateway_hands":["mon","mon_sess_slot_3"],"sesst_mon_ama_managing_your_payable_leases_with_prolease":["mon","mon_sess_slot_2"],"sesst_mon_latest_greatest_pmx_commercial_management_core_acc":["mon","mon_sess_slot_2"],"sesst_wed_latest_greatest_pmx_commercial_management_core_acc_2":["wed","wed_sess_slot_1"],"sesst_mon_pmx_101_intro_to_sql_hands_on_workshop":["mon","mon_sess_slot_2"],"sesst_mon_campfire_exploring_managed_services_to_scale_lease":["mon","mon_sess_slot_3"],"sesst_mon_commercial_leasing_101_introduction_to_engage_deal":["mon","mon_sess_slot_4"],"sesst_mon_pmx_201_financial_format_best_practices":["mon","mon_sess_slot_3"],"sesst_mon_table_talks_new_pmx_users":["mon","mon_sess_slot_5"],"sesst_mon_pmx_101_budgeting_and_forecasting_best_practices_a":["mon","mon_sess_slot_4"],"sesst_tue_campfire_exploring_workflow_automation_for_account":["tue","tue_sess_slot_2"],"sesst_mon_campfire_exploring_workflow_automation_for_commerc":["mon","mon_sess_slot_6"],"sesst_mon_pmx_201_job_cost_masterclass":["mon","mon_sess_slot_6"],"sesst_tue_pmx_101_import_export_hands_on_workshop_2":["tue","tue_sess_slot_1"],"sesst_tue_workflow_roundtable_accounting_investment_manageme":["tue","tue_sess_slot_1"],"sesst_tue_workflow_roundtable_commercial":["tue","tue_sess_slot_1"],"sesst_tue_ama_new_pmx_x_7_screens":["tue","tue_sess_slot_1"],"sesst_tue_campfire_best_practices_for_configuring_and_managi":["tue","tue_sess_slot_1"],"sesst_tue_prolease_suite_201_advanced_use_cases_and_reportin":["tue","tue_sess_slot_2"],"sesst_tue_table_talks_talking_challenges_in_retail_accountin":["tue","tue_sess_slot_2"],"sesst_tue_ama_pmx_payments":["tue","tue_sess_slot_2"],"sesst_tue_pmx_101_getting_started_with_ai_in_pmx_hands_on_wo":["tue","tue_sess_slot_2"],"sesst_tue_campfire_pmx_updates_and_cloud_migrations":["tue","tue_sess_slot_4"],"sesst_tue_inside_the_partnership_how_benderson_and_mri_reima":["tue","tue_sess_slot_4"],"sesst_tue_contract_intelligence_101_latest_enhancement_to_mc":["tue","tue_sess_slot_4"],"sesst_tue_pmx_301_budgeting_and_forecasting_troubleshooting_":["tue","tue_sess_slot_4"],"sesst_tue_pmx_cm_101_recoveries_best_practices_setup":["tue","tue_sess_slot_5"],"sesst_tue_table_talks_integrating_pmx_and_contract_intellige":["tue","tue_sess_slot_5"],"sesst_tue_ama_engage_tenant_portal":["tue","tue_sess_slot_5"],"sesst_tue_ama_contract_intelligence":["tue","tue_sess_slot_5"],"sesst_tue_pmx_101_best_practices_for_pmx_reporting_and_repor":["tue","tue_sess_slot_5"],"sesst_wed_latest_greatest_pmx_core_accounting_financials":["wed","wed_sess_slot_1"],"sesst_wed_pmx_201_techniques_and_tactics_to_simplify_cam_rec":["wed","wed_sess_slot_2"],"sesst_wed_fixed_asset_accounting_301_advanced_capabilities_d":["wed","wed_sess_slot_2"],"sesst_wed_pmx_201_navigating_the_database_gl_rm_and_cm_schem":["wed","wed_sess_slot_3"],"sesst_wed_pmx_201_tips_and_techniques_for_successful_bank_re":["wed","wed_sess_slot_3"],"sesst_mon_residential_keynote_innovation_to_drive_leasing_re":["mon","mon_sess_slot_1"],"sesst_mon_latest_greatest_engage":["mon","mon_sess_slot_2"],"sesst_mon_engage_101_ai_agents_for_property_teams":["mon","mon_sess_slot_3"],"sesst_mon_latest_greatest_pmx_residential_management":["mon","mon_sess_slot_6"],"sesst_mon_campfire_the_future_of_multifamily_technology_and_":["mon","mon_sess_slot_4"],"sesst_mon_pmx_rm_101_from_resident_ledger_to_general_ledger_":["mon","mon_sess_slot_4"],"sesst_tue_table_talks_residential_property_management_meetup":["tue","tue_sess_slot_3"],"sesst_tue_workflow_roundtable_residential_property_managemen":["tue","tue_sess_slot_1"],"sesst_tue_engage_protect_101_latest_enhancements_to_fight_fr":["tue","tue_sess_slot_4"],"sesst_tue_ama_engage_secure_sign":["tue","tue_sess_slot_4"],"sesst_tue_pmx_201_managing_units_in_pmx_for_market_rate_prop":["tue","tue_sess_slot_4"],"sesst_tue_campfire_resident_retention_strategies":["tue","tue_sess_slot_5"],"sesst_tue_engage_pay_101_formerly_rentpayment_payments_flexi":["tue","tue_sess_slot_5"],"sesst_wed_engage_101_migrating_from_connect_suite_to_the_eng":["wed","wed_sess_slot_1"],"sesst_wed_pmx_rm_101_managing_units_in_pmx_move_in_calendar_":["wed","wed_sess_slot_1"],"sesst_wed_pmx_rm_301_deep_dive_into_tables_and_data_structur":["wed","wed_sess_slot_2"],"sesst_wed_pmx_rm_301_troubleshooting_for_power_users":["wed","wed_sess_slot_3"],"sesst_mon_ama_understanding_your_mri_support_options":["mon","mon_sess_slot_3"],"sesst_mon_ama_mri_certification_program":["mon","mon_sess_slot_4"],"sesst_tue_table_talks_exploring_managed_services_options_ben":["tue","tue_sess_slot_4"],"sesst_mon_campfire_the_changing_landscape_of_retail":["mon","mon_sess_slot_4"],"sesst_mon_table_talks_canadian_users_meetup":["mon","mon_sess_slot_4"],"sesst_mon_affordable_public_housing_compliance_updates":["mon","mon_sess_slot_2"],"sesst_mon_building_operations_fm_keynote_innovation_to_optim":["mon","mon_sess_slot_1"],"sesst_mon_building_operations_fm_understanding_mri_s_innovat":["mon","mon_sess_slot_2"],"sesst_tue_workflow_roundtable_building_operations_fm":["tue","tue_sess_slot_1"],"sesst_mon_invite_only_executive_roundtable_ai_that_s_actuall":["mon","mon_sess_slot_6"],"sesst_mon_hold_for_mri_users_group_1":["mon","mon_sess_slot_6"],"sesst_tue_hold_for_mri_users_group_2":["tue","tue_sess_slot_5"],"sesst_mon_campfire_commercial_amenities_that_pay_off":["mon","mon_sess_slot_6"]};
-const SEED_VERSION = 42;
+const SEED_VERSION = 43;
 const SEED_PATCHES = [
   { version: 23, apply(st){
     // New "Agora Widget Ready" field on every tracked product.
@@ -2125,6 +2126,12 @@ const SEED_PATCHES = [
       if(sl){ sl.start = '08:00'; sl.end = '08:30'; sl.label = '8:00\u20138:30 AM Breakfast'; }
     });
   }},
+  { version: 43, apply(st){
+    // Oct 2026: Tyler — Partner Sessions tab. Adds empty containers; Sales
+    // people are chosen with the new "Sales?" roster checkbox.
+    if(!Array.isArray(st.partnerSessions)) st.partnerSessions = [];
+    if(!st.partnerPlans || typeof st.partnerPlans!=='object') st.partnerPlans = {};
+  }},
 ];
 function applySeedPatches(st){
   const have = st.seedVersion || 0;
@@ -2292,7 +2299,7 @@ function getDay(dayId){ return state.days.find(d=>d.id===dayId); }
 function getStation(id){ return state.stations.find(s=>s.id===id); }
 // Same color language as the Excel export: pods green, sessions orange,
 // Support Hub purple, Services Desk blue. Everything else stays uncolored.
-const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE', scanning:'#F4B6C2', wayfinding:'#F8CBAD' };
+const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE', scanning:'#F4B6C2', wayfinding:'#F8CBAD', partner:'#B2DFDB' };
 function getCategoryColor(station){
   if(!station) return null;
   if(station.type==='pod') return CATEGORY_COLORS.pod;
@@ -2590,8 +2597,12 @@ const DAY_ORDER_IDX = {sat:0,sun:1,mon:2,tue:3,wed:4};
 // on-screen display); includeAll=false drops them (for ICS/PDF export).
 function getScheduleRows(personId, includeAll){
   const entries = [];
+  const pInfo = getPartnerPlanInfo(personId);
   state.days.forEach(d=>{
     d.slots.forEach(s=>{
+      // A Sales person's assigned partner session replaces their normal
+      // Session 6.5 row on Tuesday.
+      if(pInfo && pInfo.session && d.id===PARTNER_SLOT.dayId && s.id===PARTNER_SLOT.slotId) return;
       const a = computeAssignment(personId, d.id, s.id);
       if(!includeAll && (a.type==='free' || (a.type==='break' && !/breakfast/i.test(s.label)))) return;
       const station = a.type==='station' ? getStation(a.stationId) : null;
@@ -2608,6 +2619,24 @@ function getScheduleRows(personId, includeAll){
       start: minToHHMM(window.startMin), end: minToHHMM(window.endMin), color:CATEGORY_COLORS.scanning
     });
   });
+  if(pInfo){
+    if(pInfo.session){
+      const d = getDay(PARTNER_SLOT.dayId), sl = d && d.slots.find(x=>x.id===PARTNER_SLOT.slotId);
+      if(d && sl) entries.push({
+        dayId:d.id, dayName:d.name, slotLabel:slotTimeOnly(sl.label),
+        text:'Partner Session \u2014 '+pInfo.session.name+(pInfo.session.room?' \u2014 '+pInfo.session.room:''),
+        sortMin:startMinutes(sl.start), isScan:false, start:sl.start, end:sl.end, color:CATEGORY_COLORS.partner
+      });
+    }
+    if(pInfo.walk){
+      const d = getDay(pInfo.walk.dayId);
+      if(d) entries.push({
+        dayId:d.id, dayName:d.name, slotLabel:fmtMin(pInfo.walk.startMin)+'\u2013'+fmtMin(pInfo.walk.endMin),
+        text:'Partner Walk-through \u2014 take your clients to visit partners',
+        sortMin:pInfo.walk.startMin, isScan:false, start:minToHHMM(pInfo.walk.startMin), end:minToHHMM(pInfo.walk.endMin), color:CATEGORY_COLORS.partner
+      });
+    }
+  }
   getPersonWayfindingDuties(personId).forEach(s=>{
     const d = getDay(s.dayId);
     if(!d) return;
@@ -2643,6 +2672,7 @@ function render(){
   else if(state.activeTab==='coverage') renderCoverage();
   else if(state.activeTab==='scanning') renderScanning();
   else if(state.activeTab==='wayfind_reg') renderWayfindReg();
+  else if(state.activeTab==='partners') renderPartners();
   else if(state.activeTab==='readiness') renderReadiness();
   else if(state.activeTab==='people') renderPeople();
   else if(state.activeTab==='export') renderExport();
@@ -2773,7 +2803,7 @@ function renderSetup(){
       <textarea id="bulk-paste" rows="4" style="width:100%" placeholder="Jane Doe, Support, Support Desk&#10;John Smith, Sales Engineering, Demo Pod 3, Services Desk"></textarea>
       <div class="row" style="margin-top:8px"><button class="btn sm" id="bulk-add">Add pasted rows</button></div>
       <div class="scrollx scrolly" style="margin-top:12px">
-        <table><thead><tr><th>Name</th><th>Department</th><th>Home Station 1</th><th>Home Station 2</th><th>Scanner?</th><th>Way Finder?</th><th>Registration?</th><th>Notes</th><th></th></tr></thead>
+        <table><thead><tr><th>Name</th><th>Department</th><th>Home Station 1</th><th>Home Station 2</th><th>Scanner?</th><th>Way Finder?</th><th>Registration?</th><th>Sales?</th><th>Notes</th><th></th></tr></thead>
         <tbody id="staff-rows"></tbody></table>
       </div>
     </div>
@@ -2905,6 +2935,7 @@ function renderSetup(){
       <td style="text-align:center"><input type="checkbox" data-pfield-bool="canScan" data-pid="${p.id}" ${p.canScan?'checked':''}></td>
       <td style="text-align:center"><input type="checkbox" data-pfield-bool="canWayfind" data-pid="${p.id}" ${p.canWayfind?'checked':''}></td>
       <td style="text-align:center"><input type="checkbox" data-pfield-bool="canRegistration" data-pid="${p.id}" ${p.canRegistration?'checked':''}></td>
+      <td style="text-align:center"><input type="checkbox" data-pfield-bool="isSales" data-pid="${p.id}" ${p.isSales?'checked':''}></td>
       <td><input type="text" data-pfield="notes" data-pid="${p.id}" value="${esc(p.notes||'')}" style="width:170px"></td>
       <td><button class="btn sm ghost" data-del-staff="${p.id}">Remove</button></td>
     </tr>
@@ -3301,6 +3332,227 @@ function renderWayfindReg(){
       st.wayfindingSlots = (st.wayfindingSlots||[]).filter(x=>x.id!==b.dataset.wfRemove);
     });
   });
+}
+
+// ---------- PARTNER SESSIONS TAB ----------
+// Sales people marked "Sales?" on the roster each get two things:
+//  1) one partner session in Tuesday's Session 6.5 block (11:35-12:15), and
+//  2) a 30-minute walk-through slot during a break or lunch, to take their
+//     clients around to visit partners.
+// Both flow into Individual Schedules, Staff View, the PDF and the calendar.
+// They are stored separately from station overrides on purpose: attending a
+// session / walking clients isn't "staffing" a station, so Coverage counts
+// are not affected.
+const PARTNER_SLOT = { dayId:'tue', slotId:'tue_partners' };
+function getPartnerSessions(){ if(!Array.isArray(state.partnerSessions)) state.partnerSessions = []; return state.partnerSessions; }
+function getPartnerPlans(){ if(!state.partnerPlans || typeof state.partnerPlans!=='object') state.partnerPlans = {}; return state.partnerPlans; }
+function getPartnerSessionWindow(){
+  const d = getDay(PARTNER_SLOT.dayId), sl = d && d.slots.find(x=>x.id===PARTNER_SLOT.slotId);
+  if(!sl) return null;
+  return { dayId:d.id, startMin:startMinutes(sl.start), endMin:startMinutes(sl.end), label:sl.label };
+}
+// Break and lunch windows that are long enough (30+ min) for a walk-through.
+function getPartnerWalkWindows(){
+  const out = [];
+  state.days.forEach(d=>d.slots.forEach(sl=>{
+    if(sl.type==='allstaff') return;
+    if(!/\bbreak\b|lunch/i.test(sl.label)) return;
+    const a = startMinutes(sl.start), b = startMinutes(sl.end);
+    if(b-a < 30) return;
+    out.push({ key:d.id+'|'+sl.id, dayId:d.id, dayName:d.name, slotId:sl.id, startMin:a, endMin:b, label:d.name+' — '+sl.label });
+  }));
+  return out;
+}
+function getPartnerPlanInfo(personId){
+  const p = getStaff(personId);
+  if(!p || !p.isSales) return null;
+  const plan = getPartnerPlans()[personId];
+  if(!plan) return null;
+  const session = plan.sessionId ? getPartnerSessions().find(x=>x.id===plan.sessionId) : null;
+  let walk = null;
+  if(plan.walkKey && plan.walkStart){
+    const w = getPartnerWalkWindows().find(x=>x.key===plan.walkKey);
+    if(w){ const a = startMinutes(plan.walkStart); walk = { dayId:w.dayId, startMin:a, endMin:a+30 }; }
+  }
+  if(!session && !walk) return null;
+  return { session, walk };
+}
+// Why someone can't be somewhere for a given window (empty string = free).
+// `ignore` = 'session' or 'walk' skips that part of their own plan.
+function partnerBusyReason(personId, dayId, startMin, endMin, ignore){
+  if(isPresentingDuringWindow(personId, dayId, startMin, endMin)) return 'presenting';
+  if(isScanningDuringWindow(personId, dayId, startMin, endMin, null)) return 'scanning';
+  if(isWayfindingDuringWindow(personId, dayId, startMin, endMin, null)) return 'wayfinding';
+  const plan = getPartnerPlans()[personId];
+  if(plan){
+    const sw = getPartnerSessionWindow();
+    if(ignore!=='session' && plan.sessionId && sw && sw.dayId===dayId && sw.startMin<endMin && sw.endMin>startMin) return 'partner session';
+    if(ignore!=='walk' && plan.walkKey && plan.walkStart){
+      const w = getPartnerWalkWindows().find(x=>x.key===plan.walkKey);
+      if(w && w.dayId===dayId){
+        const a = startMinutes(plan.walkStart);
+        if(a<endMin && a+30>startMin) return 'partner walk';
+      }
+    }
+  }
+  return '';
+}
+function ensurePartnerPlan(pid){
+  const plans = getPartnerPlans();
+  if(!plans[pid]) plans[pid] = { sessionId:'', walkKey:'', walkStart:'' };
+  return plans[pid];
+}
+function renderPartners(){
+  const sessions = getPartnerSessions();
+  const plans = getPartnerPlans();
+  const sales = state.staff.filter(p=>p.isSales).sort(byFirstName);
+  const sw = getPartnerSessionWindow();
+  const windows = getPartnerWalkWindows();
+  const sessCount = {};
+  sales.forEach(p=>{ const pl = plans[p.id]; if(pl && pl.sessionId) sessCount[pl.sessionId] = (sessCount[pl.sessionId]||0)+1; });
+  const needSession = sales.filter(p=>!(plans[p.id] && plans[p.id].sessionId)).length;
+  const needWalk = sales.filter(p=>!(plans[p.id] && plans[p.id].walkKey && plans[p.id].walkStart)).length;
+  const timeRange = t => fmtMin(t)+'–'+fmtMin(t+30);
+
+  const personRow = p=>{
+    const pl = plans[p.id] || {};
+    const warns = [];
+    if(sw && pl.sessionId){
+      const r = partnerBusyReason(p.id, sw.dayId, sw.startMin, sw.endMin, 'session');
+      if(r) warns.push('Session time conflicts: '+r);
+    }
+    const win = pl.walkKey ? windows.find(w=>w.key===pl.walkKey) : null;
+    let startOpts = '';
+    if(win){
+      const opts = [];
+      for(let t=win.startMin; t+30<=win.endMin; t+=15) opts.push(t);
+      const cur = pl.walkStart ? startMinutes(pl.walkStart) : null;
+      startOpts = opts.map(t=>{
+        const r = partnerBusyReason(p.id, win.dayId, t, t+30, 'walk');
+        const val = minToHHMM(t);
+        const sel = cur===t;
+        if(r && !sel) return '';
+        if(r && sel) warns.push('Walk time conflicts: '+r);
+        return `<option value="${val}" ${sel?'selected':''}>${timeRange(t)}${r?' (conflict)':''}</option>`;
+      }).join('');
+    }
+    return `<tr>
+      <td>${esc(p.name)}</td>
+      <td>${esc(p.dept||'')}</td>
+      <td><select data-pp="sessionId" data-pid="${p.id}">
+        <option value="">— not assigned —</option>
+        ${sessions.map(s=>{
+          const full = s.capacity && (sessCount[s.id]||0) >= Number(s.capacity) && pl.sessionId!==s.id;
+          return `<option value="${s.id}" ${pl.sessionId===s.id?'selected':''} ${full?'disabled':''}>${esc(s.name||'(unnamed)')}${s.room?' — '+esc(s.room):''}${full?' (full)':''}</option>`;
+        }).join('')}
+      </select></td>
+      <td><select data-pp="walkKey" data-pid="${p.id}">
+        <option value="">— not scheduled —</option>
+        ${windows.map(w=>`<option value="${w.key}" ${pl.walkKey===w.key?'selected':''}>${esc(w.label)}</option>`).join('')}
+      </select></td>
+      <td>${win ? `<select data-pp="walkStart" data-pid="${p.id}">${startOpts}</select>` : '<span class="muted">—</span>'}</td>
+      <td>${warns.length ? `<span class="badge short">${esc(warns.join('; '))}</span>` : (pl.sessionId && pl.walkKey && pl.walkStart ? '<span class="badge ok">done</span>' : '<span class="muted">incomplete</span>')}</td>
+    </tr>`;
+  };
+
+  bodyEl.innerHTML = `
+    <div class="panel">
+      <div class="flex-between" style="margin-bottom:6px">
+        <h2 style="margin-bottom:0">Partner Sessions${sw ? ' — Tuesday '+esc(sw.label) : ''}</h2>
+        <button class="btn sm ghost" id="ps-add">+ Add partner session</button>
+      </div>
+      <div class="muted" style="margin-bottom:8px">Add each partner session that runs in the Session 6.5 block. Capacity is optional — leave blank for no limit.</div>
+      <table><thead><tr><th>Partner session</th><th>Room</th><th>Capacity</th><th>Assigned</th><th></th></tr></thead>
+      <tbody>${sessions.map(s=>`<tr>
+        <td><input type="text" data-psf="name" data-psid="${s.id}" value="${esc(s.name||'')}" placeholder="Partner / session name" style="width:300px"></td>
+        <td><input type="text" data-psf="room" data-psid="${s.id}" value="${esc(s.room||'')}" placeholder="Room" style="width:110px"></td>
+        <td><input type="text" data-psf="capacity" data-psid="${s.id}" value="${esc(s.capacity||'')}" style="width:70px"></td>
+        <td class="mono">${sessCount[s.id]||0}</td>
+        <td><button class="btn sm ghost" data-ps-remove="${s.id}">Remove</button></td>
+      </tr>`).join('') || '<tr><td colspan="5" class="muted">No partner sessions yet — click "+ Add partner session".</td></tr>'}</tbody></table>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <div class="flex-between" style="margin-bottom:6px">
+        <h2 style="margin-bottom:0">Sales People</h2>
+        <div class="row">
+          <span class="pill">${needSession} need a session</span>
+          <span class="pill">${needWalk} need a walk-through</span>
+          <button class="btn sm" id="pp-auto-sessions">Auto-assign sessions</button>
+          <button class="btn sm" id="pp-auto-walks">Auto-assign walk-throughs</button>
+          <button class="btn sm ghost" id="pp-clear">Clear all</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-bottom:8px">Everyone checked "Sales?" in Setup → Staff Roster appears here. Each needs one partner session and one 30-minute walk-through during a break or lunch (windows shorter than 30 minutes are left out). Times that clash with presenting, scanning, or wayfinding are flagged or hidden.</div>
+      <div class="scrollx scrolly">
+        <table><thead><tr><th>Name</th><th>Department</th><th>Partner session</th><th>Walk-through window</th><th>30-min start</th><th>Status</th></tr></thead>
+        <tbody>${sales.map(personRow).join('') || '<tr><td colspan="6" class="muted">Nobody is marked "Sales?" yet — check the box in Setup → Staff Roster.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('ps-add').onclick = ()=>update(st=>{ getPartnerSessions().push({ id:uid('ps'), name:'', room:'', capacity:'' }); });
+  bodyEl.querySelectorAll('[data-psf]').forEach(el=>{
+    el.onchange = ()=>update(st=>{
+      const s = getPartnerSessions().find(x=>x.id===el.dataset.psid);
+      if(s) s[el.dataset.psf] = el.value;
+    });
+  });
+  bodyEl.querySelectorAll('[data-ps-remove]').forEach(b=>{
+    b.onclick = ()=>update(st=>{
+      const id = b.dataset.psRemove;
+      st.partnerSessions = getPartnerSessions().filter(x=>x.id!==id);
+      Object.values(getPartnerPlans()).forEach(pl=>{ if(pl.sessionId===id) pl.sessionId=''; });
+    });
+  });
+  bodyEl.querySelectorAll('[data-pp]').forEach(el=>{
+    el.onchange = ()=>update(st=>{
+      const pl = ensurePartnerPlan(el.dataset.pid);
+      const f = el.dataset.pp;
+      if(f==='walkKey'){
+        pl.walkKey = el.value; pl.walkStart = '';
+        const w = el.value ? getPartnerWalkWindows().find(x=>x.key===el.value) : null;
+        if(w){
+          for(let t=w.startMin; t+30<=w.endMin; t+=15){
+            if(!partnerBusyReason(el.dataset.pid, w.dayId, t, t+30, 'walk')){ pl.walkStart = minToHHMM(t); break; }
+          }
+        }
+      } else pl[f] = el.value;
+    });
+  });
+  document.getElementById('pp-auto-sessions').onclick = ()=>update(st=>{
+    const ses = getPartnerSessions();
+    if(!ses.length || !sw) return;
+    const counts = {};
+    ses.forEach(s=>counts[s.id]=0);
+    st.staff.filter(p=>p.isSales).forEach(p=>{ const pl = getPartnerPlans()[p.id]; if(pl && pl.sessionId && counts[pl.sessionId]!==undefined) counts[pl.sessionId]++; });
+    st.staff.filter(p=>p.isSales).sort(byFirstName).forEach(p=>{
+      const pl = ensurePartnerPlan(p.id);
+      if(pl.sessionId) return;
+      if(partnerBusyReason(p.id, sw.dayId, sw.startMin, sw.endMin, 'session')) return;
+      const open = ses.filter(s=>!s.capacity || counts[s.id] < Number(s.capacity)).sort((a,b)=>counts[a.id]-counts[b.id]);
+      if(!open.length) return;
+      pl.sessionId = open[0].id; counts[open[0].id]++;
+    });
+  });
+  document.getElementById('pp-auto-walks').onclick = ()=>update(st=>{
+    const slots = [];
+    windows.forEach(w=>{ for(let t=w.startMin; t+30<=w.endMin; t+=30) slots.push({ key:w.key, dayId:w.dayId, start:t, n:0 }); });
+    if(!slots.length) return;
+    st.staff.filter(p=>p.isSales).forEach(p=>{ const pl = getPartnerPlans()[p.id]; if(pl && pl.walkKey && pl.walkStart){ const sl = slots.find(x=>x.key===pl.walkKey && x.start===startMinutes(pl.walkStart)); if(sl) sl.n++; } });
+    st.staff.filter(p=>p.isSales).sort(byFirstName).forEach(p=>{
+      const pl = ensurePartnerPlan(p.id);
+      if(pl.walkKey && pl.walkStart) return;
+      const open = slots.filter(x=>!partnerBusyReason(p.id, x.dayId, x.start, x.start+30, 'walk')).sort((a,b)=>a.n-b.n);
+      if(!open.length) return;
+      pl.walkKey = open[0].key; pl.walkStart = minToHHMM(open[0].start); open[0].n++;
+    });
+  });
+  document.getElementById('pp-clear').onclick = ()=>{
+    customConfirm('This clears every partner session and walk-through assignment for all Sales people so you can start over. This can\'t be undone. Continue?', (ok)=>{
+      if(!ok) return;
+      update(st=>{ st.partnerPlans = {}; });
+    }, 'Clear partner assignments');
+  };
 }
 
 // ---------- POD READINESS TAB ----------
