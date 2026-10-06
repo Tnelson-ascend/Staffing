@@ -13,7 +13,7 @@
   window.ASCEND_SUPABASE_ANON_KEY = 'sb_publishable_1rfUabvPpffeYGx58WRO0g_gkWRQScY';
 </script>
 <style>
- :root{
+  :root{
     --ink:#044D66;
     --ink-2:#007AC6;
     --paper:#F7FBFC;
@@ -2274,7 +2274,7 @@ function getDay(dayId){ return state.days.find(d=>d.id===dayId); }
 function getStation(id){ return state.stations.find(s=>s.id===id); }
 // Same color language as the Excel export: pods green, sessions orange,
 // Support Hub purple, Services Desk blue. Everything else stays uncolored.
-const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE', wayfinding:'#F8CBAD', scanning:'#F4B6C2'};
+const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE', scanning:'#F4B6C2', wayfinding:'#F8CBAD' };
 function getCategoryColor(station){
   if(!station) return null;
   if(station.type==='pod') return CATEGORY_COLORS.pod;
@@ -2552,6 +2552,12 @@ function getWayfindingCandidates(slot){
   }).sort((a,b)=> (a.eligible===b.eligible?0:a.eligible?-1:1) || a.person.name.localeCompare(b.person.name));
 }
 
+// Individual schedules show just the time range; the assignment text already
+// says what the person is doing, so "Session 10" etc. would be redundant.
+function slotTimeOnly(label){
+  const m = String(label||'').match(/^\s*(\d{1,2}:\d{2}(?:\s?[AP]M)?\s*[\u2013-]\s*\d{1,2}:\d{2}\s?[AP]M)/i);
+  return m ? m[1].trim() : (label||'');
+}
 function minToHHMM(total){
   let m = ((total%1440)+1440)%1440;
   return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
@@ -2569,13 +2575,13 @@ function getScheduleRows(personId, includeAll){
       const station = a.type==='station' ? getStation(a.stationId) : null;
       let text = assignmentLabel(a);
       if(station && station.type==='session' && station.room) text += ' \u2014 '+station.room;
-      entries.push({dayId:d.id, dayName:d.name, slotLabel:s.label, text, sortMin:startMinutes(s.start), isScan:false, start:s.start, end:s.end, color:getCategoryColor(station)});
+      entries.push({dayId:d.id, dayName:d.name, slotLabel:slotTimeOnly(s.label), text, sortMin:startMinutes(s.start), isScan:false, start:s.start, end:s.end, color:getCategoryColor(station)});
     });
   });
   getPersonScanDuties(personId).forEach(({station,window})=>{
     entries.push({
       dayId: window.dayId, dayName: getDay(window.dayId).name,
-      slotLabel: fmtMin(window.startMin)+'\u2013'+fmtMin(window.endMin)+' Scan Duty',
+      slotLabel: fmtMin(window.startMin)+'\u2013'+fmtMin(window.endMin),
       text: 'Scanning \u2014 '+station.name+(station.room?' \u2014 '+station.room:''), sortMin: window.startMin, isScan:true,
       start: minToHHMM(window.startMin), end: minToHHMM(window.endMin), color:CATEGORY_COLORS.scanning
     });
@@ -2583,11 +2589,11 @@ function getScheduleRows(personId, includeAll){
   getPersonWayfindingDuties(personId).forEach(s=>{
     const d = getDay(s.dayId);
     if(!d) return;
-    const timeLabel = (s.start||s.end) ? ((s.start||'?')+'–'+(s.end||'?')+' ') : '';
+    const timeLabel = (s.start||s.end) ? ((s.start?fmtMin(startMinutes(s.start)):'?')+'\u2013'+(s.end?fmtMin(startMinutes(s.end)):'?')) : 'Time TBD';
     entries.push({
       dayId: s.dayId, dayName: d.name,
-      slotLabel: timeLabel+'Wayfinding', text: 'Wayfinding'+(s.note?' — '+s.note:''),
-      sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.other||CATEGORY_COLORS.wayfinding
+      slotLabel: timeLabel, text: 'Wayfinding'+(s.note?' — '+s.note:''),
+      sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.wayfinding
     });
   });
   entries.sort((a,b)=> (DAY_ORDER_IDX[a.dayId]-DAY_ORDER_IDX[b.dayId]) || (a.sortMin-b.sortMin));
