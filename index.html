@@ -2274,7 +2274,7 @@ function getDay(dayId){ return state.days.find(d=>d.id===dayId); }
 function getStation(id){ return state.stations.find(s=>s.id===id); }
 // Same color language as the Excel export: pods green, sessions orange,
 // Support Hub purple, Services Desk blue. Everything else stays uncolored.
-const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE', wayfinding:'#F8CBAD' };
+const CATEGORY_COLORS = { pod:'#C6E0B4', session:'#FFD966', supportHub:'#D9D2E9', servicesDesk:'#BDD7EE', wayfinding:'#F8CBAD', scanning:'#F4B6C2'};
 function getCategoryColor(station){
   if(!station) return null;
   if(station.type==='pod') return CATEGORY_COLORS.pod;
@@ -2577,7 +2577,7 @@ function getScheduleRows(personId, includeAll){
       dayId: window.dayId, dayName: getDay(window.dayId).name,
       slotLabel: fmtMin(window.startMin)+'\u2013'+fmtMin(window.endMin)+' Scan Duty',
       text: 'Scanning \u2014 '+station.name+(station.room?' \u2014 '+station.room:''), sortMin: window.startMin, isScan:true,
-      start: minToHHMM(window.startMin), end: minToHHMM(window.endMin), color:CATEGORY_COLORS.session
+      start: minToHHMM(window.startMin), end: minToHHMM(window.endMin), color:CATEGORY_COLORS.scanning
     });
   });
   getPersonWayfindingDuties(personId).forEach(s=>{
