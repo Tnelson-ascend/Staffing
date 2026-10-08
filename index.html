@@ -3269,9 +3269,9 @@ function scanGridHtml(daySessions){
   const unfilled = daySessions.filter(x=>!state.scanAssignments[x.id]).length;
   return `<div class="flex-between" style="margin:18px 0 6px">
       <h3 style="margin:0">Room Coverage Grid</h3>
-      <span class="pill">${daySessions.length-unfilled} of ${daySessions.length} covered on ${esc(day?day.name:'')}</span>
+      <span class="row"><span class="pill">${daySessions.length-unfilled} of ${daySessions.length} covered on ${esc(day?day.name:'')}</span><span class="pill">${daySessions.filter(x=>state.scanAssignments[x.id] && state.scanPickedUp && state.scanPickedUp[x.id]===state.scanAssignments[x.id]).length} scanners picked up</span></span>
     </div>
-    <div class="muted" style="margin-bottom:8px">Read-only view of the day selected above: rooms down the side, session times across the top. Each cell shows who is scanning the session in that room; red means nobody yet. Assign people in the table above.</div>
+    <div class="muted" style="margin-bottom:8px">Read-only view of the day selected above: rooms down the side, session times across the top. Each cell shows who is scanning the session in that room; red means nobody yet. Tick the box once that scanner has picked up their scanner from the reg desk (the cell turns green). Assign people in the table above.</div>
     <div class="scrollx scrolly" style="max-height:70vh"><table style="border-collapse:collapse;width:100%">
       <thead><tr><th style="text-align:left;position:sticky;left:0;background:#d9edf7">Room</th>${cols.map(c=>`<th>${fmtMin(c.start)}<div class="muted" style="font-weight:400">scan ${fmtMin(c.start-15)}\u2013${fmtMin(c.start+15)}</div></th>`).join('')}</tr></thead>
       <tbody>${rooms.map(r=>`<tr><td style="font-weight:600;white-space:nowrap;position:sticky;left:0;background:#fff">${esc(r)}</td>${cols.map(c=>{
@@ -3280,8 +3280,9 @@ function scanGridHtml(daySessions){
           const pid = state.scanAssignments[x.id];
           const person = pid ? getStaff(pid) : null;
           const title = esc(x.name.length>46 ? x.name.slice(0,45)+'\u2026' : x.name);
+          const got = person && state.scanPickedUp && state.scanPickedUp[x.id]===pid;
           return person
-            ? `<div style="background:#F4B6C266;border-left:4px solid #F4B6C2;padding:3px 6px;margin-bottom:3px;border-radius:3px"><b>${esc(person.name)}</b><div class="muted" style="font-size:11px">${title}</div></div>`
+            ? `<div style="background:${got?'#C6E0B4':'#F4B6C266'};border-left:4px solid ${got?'#5a9a3a':'#F4B6C2'};padding:3px 6px;margin-bottom:3px;border-radius:3px"><label style="display:flex;gap:6px;align-items:flex-start;cursor:pointer"><input type="checkbox" data-scan-pick="${x.id}" data-scan-person="${pid}" ${got?'checked':''} style="margin-top:3px"><span><b>${esc(person.name)}</b><div class="muted" style="font-size:11px">${title}</div></span></label></div>`
             : `<div style="background:#fde2e2;border-left:4px solid #d33;color:#a00;padding:3px 6px;margin-bottom:3px;border-radius:3px"><b>Unassigned</b><div style="font-size:11px">${title}</div></div>`;
         }).join('')}</td>`;
       }).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -3376,6 +3377,19 @@ function renderScanning(){
       if(sel.value) st.scanAssignments[sel.dataset.scanStation] = sel.value;
       else delete st.scanAssignments[sel.dataset.scanStation];
     });
+  });
+  bodyEl.querySelectorAll('[data-scan-pick]').forEach(cb=>{
+    cb.onchange = ()=>{
+      const box = cb.closest('.scrollx'), top = box?box.scrollTop:0, left = box?box.scrollLeft:0, wy = window.scrollY;
+      const sid = cb.dataset.scanPick, pid = cb.dataset.scanPerson, on = cb.checked;
+      update(st=>{
+        if(!st.scanPickedUp) st.scanPickedUp = {};
+        if(on) st.scanPickedUp[sid] = pid; else delete st.scanPickedUp[sid];
+      });
+      const nb = bodyEl.querySelector('[data-scan-pick]'); const b2 = nb && nb.closest('.scrollx');
+      if(b2){ b2.scrollTop = top; b2.scrollLeft = left; }
+      window.scrollTo(0, wy);
+    };
   });
   document.getElementById('scan-clearall').onclick = ()=>{
     customConfirm(`This unassigns all ${allSessions.length - totalUnassigned} currently-assigned scan duties, across every day, so you can re-run Auto-assign from scratch. This can't be undone. Continue?`, (ok)=>{
