@@ -3246,6 +3246,46 @@ function renderCoverage(){
 }
 
 // ---------- SCANNING TAB ----------
+function scanGridHtml(daySessions){
+  const roomOf = x=>{
+    let r = String(x.room||'').trim().replace(/^#\s*/,'');
+    if(!r) return '(no room)';
+    if(/^\d+$/.test(r)) r = 'Room '+r;
+    return r;
+  };
+  const slotIds = [];
+  daySessions.forEach(x=>{ if(!slotIds.includes(x.scanSlotId)) slotIds.push(x.scanSlotId); });
+  const day = getDay(state.activeDayId);
+  const slotInfo = id=>{ const sl = day && day.slots.find(z=>z.id===id); return { id, start: sl?startMinutes(sl.start):0, startStr: sl?sl.start:'' }; };
+  const cols = slotIds.map(slotInfo).sort((a,b)=>a.start-b.start);
+  const rooms = [];
+  daySessions.forEach(x=>{ const r = roomOf(x); if(!rooms.includes(r)) rooms.push(r); });
+  rooms.sort((a,b)=>{
+    const na = parseInt((a.match(/\d+/)||[])[0],10), nb = parseInt((b.match(/\d+/)||[])[0],10);
+    if(!isNaN(na) && !isNaN(nb) && na!==nb) return na-nb;
+    return a.localeCompare(b);
+  });
+  if(!cols.length) return '';
+  const unfilled = daySessions.filter(x=>!state.scanAssignments[x.id]).length;
+  return `<div class="flex-between" style="margin:18px 0 6px">
+      <h3 style="margin:0">Room Coverage Grid</h3>
+      <span class="pill">${daySessions.length-unfilled} of ${daySessions.length} covered on ${esc(day?day.name:'')}</span>
+    </div>
+    <div class="muted" style="margin-bottom:8px">Read-only view of the day selected above: rooms down the side, session times across the top. Each cell shows who is scanning the session in that room; red means nobody yet. Assign people in the table above.</div>
+    <div class="scrollx scrolly" style="max-height:70vh"><table style="border-collapse:collapse;width:100%">
+      <thead><tr><th style="text-align:left;position:sticky;left:0;background:#d9edf7">Room</th>${cols.map(c=>`<th>${fmtMin(c.start)}<div class="muted" style="font-weight:400">scan ${fmtMin(c.start-15)}\u2013${fmtMin(c.start+15)}</div></th>`).join('')}</tr></thead>
+      <tbody>${rooms.map(r=>`<tr><td style="font-weight:600;white-space:nowrap;position:sticky;left:0;background:#fff">${esc(r)}</td>${cols.map(c=>{
+        const here = daySessions.filter(x=>roomOf(x)===r && x.scanSlotId===c.id);
+        return `<td style="vertical-align:top;min-width:150px">${here.map(x=>{
+          const pid = state.scanAssignments[x.id];
+          const person = pid ? getStaff(pid) : null;
+          const title = esc(x.name.length>46 ? x.name.slice(0,45)+'\u2026' : x.name);
+          return person
+            ? `<div style="background:#F4B6C266;border-left:4px solid #F4B6C2;padding:3px 6px;margin-bottom:3px;border-radius:3px"><b>${esc(person.name)}</b><div class="muted" style="font-size:11px">${title}</div></div>`
+            : `<div style="background:#fde2e2;border-left:4px solid #d33;color:#a00;padding:3px 6px;margin-bottom:3px;border-radius:3px"><b>Unassigned</b><div style="font-size:11px">${title}</div></div>`;
+        }).join('')}</td>`;
+      }).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
 function renderScanning(){
   const scannerPool = state.staff.filter(p=>p.canScan);
   const allSessions = state.stations.filter(s=>s.type==='session' && s.scanDayId && s.scanSlotId);
@@ -3299,6 +3339,7 @@ function renderScanning(){
       </tbody></table>
     </div>
 
+    ${scanGridHtml(daySessions)}
     <div class="flex-between" style="margin:18px 0 10px">
       <h3 style="margin:0">Scanners</h3>
       <span class="pill">${scannersWithDuty} of ${scannerPool.length} scanners assigned at least one session</span>
