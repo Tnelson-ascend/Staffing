@@ -3271,7 +3271,7 @@ function scanGridHtml(daySessions){
       <h3 style="margin:0">Room Coverage Grid</h3>
       <span class="row"><span class="pill">${daySessions.length-unfilled} of ${daySessions.length} covered on ${esc(day?day.name:'')}</span><span class="pill">${daySessions.filter(x=>state.scanAssignments[x.id] && state.scanPickedUp && state.scanPickedUp[x.id]===state.scanAssignments[x.id]).length} scanners picked up</span></span>
     </div>
-    <div class="muted" style="margin-bottom:8px">Read-only view of the day selected above: rooms down the side, session times across the top. Each cell shows who is scanning the session in that room; red means nobody yet. Tick the box once that scanner has picked up their scanner from the reg desk (the cell turns green). Assign people in the table above.</div>
+    <div class="muted" style="margin-bottom:8px">Read-only view of the day selected above: rooms down the side, session times across the top. Each cell shows who is scanning the session in that room; red means nobody yet. Tick the box once that scanner has picked up their scanner from the reg desk (the cell turns green). Assign people in the Assign Scanners table below.</div>
     <div class="scrollx scrolly" style="max-height:70vh"><table style="border-collapse:collapse;width:100%">
       <thead><tr><th style="text-align:left;position:sticky;left:0;background:#d9edf7">Room</th>${cols.map(c=>`<th>${fmtMin(c.start)}<div class="muted" style="font-weight:400">scan ${fmtMin(c.start-15)}\u2013${fmtMin(c.start+15)}</div></th>`).join('')}</tr></thead>
       <tbody>${rooms.map(r=>`<tr><td style="font-weight:600;white-space:nowrap;position:sticky;left:0;background:#fff">${esc(r)}</td>${cols.map(c=>{
@@ -3316,6 +3316,8 @@ function renderScanning(){
         <button class="btn sm amber" id="scan-autoassign">Auto-assign unfilled</button>
       </div>
     </div>
+    ${scanGridHtml(daySessions)}
+    <div class="flex-between" style="margin:18px 0 6px"><h3 style="margin:0">Assign Scanners</h3></div>
     <div class="scrollx scrolly">
       <table><thead><tr><th>Time (scan window)</th><th>Session</th><th>Assigned Scanner</th></tr></thead>
       <tbody>${daySessions.map(s=>{
@@ -3340,7 +3342,6 @@ function renderScanning(){
       </tbody></table>
     </div>
 
-    ${scanGridHtml(daySessions)}
     <div class="flex-between" style="margin:18px 0 10px">
       <h3 style="margin:0">Scanners</h3>
       <span class="pill">${scannersWithDuty} of ${scannerPool.length} scanners assigned at least one session</span>
@@ -3462,7 +3463,7 @@ function drawWfGrid(allSlots){
       <h2 style="margin-bottom:0">Posts Grid <span class="pill">${slots.length} posts \u00b7 ${unfilled} unassigned</span></h2>
       <div class="day-tabs" id="wfg-days">${days.map(d=>`<button class="btn sm ${wfGridDay===d.id?'active':'ghost'}" data-wfgday="${d.id}">${esc(d.name)}</button>`).join('')}</div>
     </div>
-    <div class="muted" style="margin-bottom:8px">Read-only view: rows are time blocks, columns are posts. Assign people in the table above. Red = unassigned.</div>
+    <div class="muted" style="margin-bottom:8px">Read-only view: rows are time blocks, columns are posts. Assign people in the Wayfinding Assignments table below. Red = unassigned.</div>
     <div class="scrollx"><table style="border-collapse:collapse;width:100%"><thead><tr><th style="text-align:left">Time</th>${posts.map(t=>`<th style="background:${col(t)}">${esc(t)}</th>`).join('')}</tr></thead>
     <tbody>${blocks.map(b=>{
       const [a,z] = b.split('|');
@@ -3502,6 +3503,7 @@ function renderWayfindReg(){
   `;
 
   bodyEl.innerHTML = `
+    <div class="panel" style="margin-bottom:16px" id="wf-grid-panel"></div>
     <div class="panel">
       <div class="flex-between" style="margin-bottom:6px">
         <h2 style="margin-bottom:0">Wayfinding Assignments</h2>
@@ -3550,7 +3552,6 @@ function renderWayfindReg(){
         </tbody></table>
       </div>
     </div>
-    <div class="panel" style="margin-top:16px" id="wf-grid-panel"></div>
     <div class="row" style="gap:16px; align-items:flex-start; flex-wrap:wrap; margin-top:16px">
       ${listBlock('Way Finders & Registration', wayfinders, 'Nobody marked yet \u2014 check "Way Finder / Reg?" in Setup \u2192 Staff Roster.', true)}
     </div>
