@@ -2774,7 +2774,7 @@ function getScheduleRows(personId, includeAll){
       const station = a.type==='station' ? getStation(a.stationId) : null;
       let text = (a.type==='allstaff'||a.type==='break') ? slotNameOnly(s.label) : assignmentLabel(a);
       if(station && station.type==='session' && station.room) text += ' \u2014 '+station.room;
-      entries.push({dayId:d.id, dayName:d.name, slotLabel:slotTimeOnly(s.label), text, sortMin:startMinutes(s.start), isScan:false, start:s.start, end:s.end, color:getCategoryColor(station)});
+      entries.push({dayId:d.id, dayName:d.name, slotLabel:slotTimeOnly(s.label), text, sortMin:startMinutes(s.start), isScan:false, start:s.start, end:s.end, color:getCategoryColor(station), ref: station ? {kind:'station', dayId:d.id, slotId:s.id, stationId:station.id} : null});
     });
   });
   getPersonScanDuties(personId).forEach(({station,window})=>{
@@ -2782,7 +2782,8 @@ function getScheduleRows(personId, includeAll){
       dayId: window.dayId, dayName: getDay(window.dayId).name,
       slotLabel: fmtMin(window.startMin)+'\u2013'+fmtMin(window.endMin),
       text: 'Scanning \u2014 '+station.name+(station.room?' \u2014 '+station.room:''), sortMin: window.startMin, isScan:true,
-      start: minToHHMM(window.startMin), end: minToHHMM(window.endMin), color:CATEGORY_COLORS.scanning
+      start: minToHHMM(window.startMin), end: minToHHMM(window.endMin), color:CATEGORY_COLORS.scanning,
+      ref: {kind:'scan', stationId:station.id}
     });
   });
   if(pInfo){
@@ -2791,7 +2792,8 @@ function getScheduleRows(personId, includeAll){
       if(d && sl) entries.push({
         dayId:d.id, dayName:d.name, slotLabel:slotTimeOnly(sl.label),
         text:'Partner Session \u2014 '+pInfo.session.name+(pInfo.session.room?' \u2014 '+pInfo.session.room:''),
-        sortMin:startMinutes(sl.start), isScan:false, start:sl.start, end:sl.end, color:CATEGORY_COLORS.partner
+        sortMin:startMinutes(sl.start), isScan:false, start:sl.start, end:sl.end, color:CATEGORY_COLORS.partner,
+        ref: {kind:'ps', psId:pInfo.session.id}
       });
     }
     if(pInfo.walk){
@@ -2810,11 +2812,51 @@ function getScheduleRows(personId, includeAll){
     entries.push({
       dayId: s.dayId, dayName: d.name,
       slotLabel: timeLabel, text: (s.title||'Wayfinding')+(s.note?' \u2014 '+s.note:''),
-      sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.wayfinding
+      sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.wayfinding,
+      ref: {kind:'wf', slotId:s.id}
     });
   });
   entries.sort((a,b)=> (DAY_ORDER_IDX[a.dayId]-DAY_ORDER_IDX[b.dayId]) || (a.sortMin-b.sortMin));
   return entries;
+}
+
+// "Who's with me": everyone else assigned to the same thing at the same time,
+// computed on demand when a staff member taps the button on a schedule row.
+function getTeammates(personId, ref){
+  const groups = [];
+  const pe = id=>{ const p = getStaff(id); return p ? {id:p.id, name:p.name} : null; };
+  const add = (label, ids)=>{ const list = ids.map(pe).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name)); if(list.length) groups.push({label, people:list}); };
+  if(!ref) return groups;
+  if(ref.kind==='station'){
+    const stn = getStation(ref.stationId);
+    const ids = state.staff.filter(p=>{
+      if(p.id===personId) return false;
+      const a = computeAssignment(p.id, ref.dayId, ref.slotId);
+      return a && a.type==='station' && a.stationId===ref.stationId;
+    }).map(p=>p.id);
+    if(stn && stn.type==='session'){
+      add('Co-presenters', ids);
+      const sc = state.scanAssignments[stn.id]; if(sc && sc!==personId) add('Scanner', [sc]);
+    } else add('Also here', ids);
+  } else if(ref.kind==='scan'){
+    const stn = getStation(ref.stationId); const w = stn && getScanWindow(stn);
+    if(w){
+      const ids = [];
+      for(const k in state.overrides){ const v = state.overrides[k]; if(v && v.stationId===stn.id){ const pid = k.split('|')[0]; if(pid!==personId && !ids.includes(pid)) ids.push(pid); } }
+      add('Presenting', ids);
+    }
+  } else if(ref.kind==='wf'){
+    const me = (state.wayfindingSlots||[]).find(x=>x.id===ref.slotId);
+    if(me){
+      const w = getWayfindingWindow(me);
+      add('Also on this post', (state.wayfindingSlots||[]).filter(x=>x.id!==me.id && x.assignedId && x.assignedId!==personId && x.dayId===me.dayId && (x.title||'')===(me.title||'') && (w ? (()=>{ const o = getWayfindingWindow(x); return o && o.startMin<w.endMin && o.endMin>w.startMin; })() : true)).map(x=>x.assignedId));
+    }
+  } else if(ref.kind==='ps'){
+    const plans = getPartnerPlans();
+    add('Also attending', state.staff.filter(p=>p.id!==personId && plans[p.id] && plans[p.id].sessionId===ref.psId).map(p=>p.id));
+    const sc = state.scanAssignments['sesst_ps_'+ref.psId]; if(sc && sc!==personId) add('Scanner', [sc]);
+  }
+  return groups;
 }
 
 // ---------- render dispatch ----------
@@ -2905,8 +2947,9 @@ function renderStaffView(){
   function drawDetail(){
     const p = staffViewSelectedId ? getStaff(staffViewSelectedId) : null;
     if(!p){ detailEl.innerHTML = '<div class="muted">Search and select your name above to view your schedule.</div>'; return; }
-    const rowsHtml = getScheduleRows(p.id, true).map(r=>
-      `<tr><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}</td></tr>`
+    const schedRows = getScheduleRows(p.id, true);
+    const rowsHtml = schedRows.map((r,i)=>
+      `<tr><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}${r.ref?`<div><button class="btn sm ghost" data-who="${i}" style="margin-top:4px;font-size:11.5px;padding:1px 9px">Who\u2019s with me \u25be</button></div><div class="who-box" data-who-box="${i}" style="display:none"></div>`:''}</td></tr>`
     ).join('');
     detailEl.innerHTML = `
       <div class="person-card">
@@ -2922,6 +2965,19 @@ function renderStaffView(){
         </div>
       </div>
     `;
+    detailEl.querySelectorAll('[data-who]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const i = +btn.dataset.who, box = detailEl.querySelector('[data-who-box="'+i+'"]');
+        if(box.style.display==='block'){ box.style.display='none'; btn.innerHTML = 'Who\u2019s with me \u25be'; return; }
+        const groups = getTeammates(p.id, schedRows[i].ref);
+        box.innerHTML = groups.length
+          ? groups.map(g=>`<div style="margin-top:6px"><b>${esc(g.label)} (${g.people.length}):</b><br>${g.people.map(x=>`<a href="#" data-goto="${x.id}" style="display:inline-block;background:#e8f0f8;border-radius:10px;padding:1px 9px;margin:2px 4px 2px 0;color:#1f4e79;text-decoration:none">${esc(x.name)}</a>`).join(' ')}</div>`).join('')
+          : '<div class="muted" style="margin-top:6px">No one else is assigned to this at the same time.</div>';
+        box.style.cssText = 'display:block;margin-top:6px;font-size:12.5px;background:#fff;border:1px solid #cfd8e3;border-radius:6px;padding:6px 10px;font-weight:400;white-space:normal;line-height:1.7';
+        btn.innerHTML = 'Hide \u25b4';
+        box.querySelectorAll('[data-goto]').forEach(a=>a.onclick=(e)=>{ e.preventDefault(); staffViewSelectedId = a.dataset.goto; drawDetail(); window.scrollTo(0,0); });
+      };
+    });
     document.getElementById('sv-ics').onclick = ()=>downloadICS(p);
     document.getElementById('sv-pdf').onclick = ()=>downloadPDF(p);
   }
