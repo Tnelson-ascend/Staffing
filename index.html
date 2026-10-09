@@ -3205,10 +3205,11 @@ function renderSetup(){
 }
 
 // ---------- ASSIGN GRID TAB ----------
+let gridQuery = '';
 function renderGrid(){
   const day = getDay(state.activeDayId);
   bodyEl.innerHTML = `
-    <div class="note">This grid shows every person's computed assignment for the selected day, based on their home station in Setup. Click any cell to override it (e.g. scanner duty, covering another pod, a one-off exception). <span style="display:inline-block;margin-left:4px">
+    <div class="note">This grid shows every person's computed assignment for the selected day, based on their home station in Setup. Search for a person, then click any cell to override it (e.g. scanner duty, covering another pod, a one-off exception). <span style="display:inline-block;margin-left:4px">
       <span style="background:${CATEGORY_COLORS.pod};padding:1px 6px;border-radius:3px">Pods</span>
       <span style="background:${CATEGORY_COLORS.session};padding:1px 6px;border-radius:3px">Sessions</span>
       <span style="background:${CATEGORY_COLORS.supportHub};padding:1px 6px;border-radius:3px">Support Hub</span>
@@ -3216,7 +3217,8 @@ function renderGrid(){
     </span></div>
     <div class="day-tabs" id="grid-daytabs"></div>
     <div class="row" style="margin-bottom:10px">
-      <input type="text" id="grid-search" placeholder="Search staff…" style="width:220px">
+      <input type="text" id="grid-search" placeholder="Search for a person…" style="width:260px" value="${esc(gridQuery)}">
+      <span class="muted" id="grid-count"></span>
       <button class="btn sm ghost" id="grid-clear-overrides">Clear all overrides for this day</button>
     </div>
     <div class="scrollx scrolly">
@@ -3230,7 +3232,18 @@ function renderGrid(){
 
   function drawRows(filter){
     const rows = document.getElementById('grid-rows');
-    const list = state.staff.filter(p=>!filter || p.name.toLowerCase().includes(filter.toLowerCase())).sort(byFirstName);
+    const q = (filter||'').trim().toLowerCase();
+    const countEl = document.getElementById('grid-count');
+    if(!q){
+      rows.innerHTML = `<tr><td colspan="${day.slots.length+2}" class="muted" style="padding:18px">Search for a person above to view and edit their assignments for ${esc(day.name)}. (The full list isn't loaded, so this tab stays fast.)</td></tr>`;
+      if(countEl) countEl.textContent = state.staff.length+' staff';
+      return;
+    }
+    const all = state.staff.filter(p=>p.name.toLowerCase().includes(q)).sort(byFirstName);
+    const LIMIT = 15;
+    const list = all.slice(0, LIMIT);
+    if(countEl) countEl.textContent = all.length>LIMIT ? 'Showing first '+LIMIT+' of '+all.length+' matches \u2014 type more to narrow' : all.length+(all.length===1?' match':' matches');
+    if(!list.length){ rows.innerHTML = `<tr><td colspan="${day.slots.length+2}" class="muted" style="padding:18px">No one matches "${esc(filter)}".</td></tr>`; return; }
     rows.innerHTML = list.map(p=>{
       const home = getStation(p.homeStationId);
       const home2 = getStation(p.homeStationId2);
@@ -3280,8 +3293,8 @@ function renderGrid(){
     if(station && station.activeDayIds.includes(dayId)) return {type:'station', stationId:station.id};
     return {type:'free'};
   }
-  drawRows('');
-  document.getElementById('grid-search').oninput = (e)=>drawRows(e.target.value);
+  drawRows(gridQuery);
+  document.getElementById('grid-search').oninput = (e)=>{ gridQuery = e.target.value; drawRows(gridQuery); };
   document.getElementById('grid-clear-overrides').onclick = ()=>{
     const n = Object.keys(state.overrides).filter(k=>k.includes('|'+day.id+'|')).length;
     customConfirm(`This removes all ${n} manual assignments for ${day.name} \u2014 including every session presenter \u2014 and puts everyone back on their home station. This can't be undone. Continue?`, (ok)=>{
