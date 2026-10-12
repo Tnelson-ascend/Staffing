@@ -2816,17 +2816,17 @@ function minToHHMM(total){
   return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 }
 // Time-of-day tags appended to schedule rows that overlap them. Edit here.
-// icon + text show after the assignment; `skip` = don't tag rows already named that.
+// text shows after the assignment; `skip` = don't tag rows already named that.
 const DAY_TAGS = [
-  {days:['mon','tue'], start:'12:00', end:'13:30', icon:'\ud83c\udf74', text:'Lunch 12:00\u20131:30 PM', skip:/lunch/i},
-  {days:['sun'], start:'17:00', end:'19:00',  text:'Welcome Reception 5:00\u20137:00 PM', skip:/welcome reception/i},
-  {days:['tue'], start:'17:00', end:'18:30',  text:'Happy Hour & Partner Awards 5:00\u20136:30 PM', skip:/happy hour|partner awards/i}
+  {days:['mon','tue'], start:'12:00', end:'13:30', text:'Lunch 12:00\u20131:30 PM', skip:/lunch/i},
+  {days:['sun'], start:'17:00', end:'19:00', text:'Welcome Reception 5:00\u20137:00 PM', skip:/welcome reception/i},
+  {days:['tue'], start:'17:00', end:'18:30', text:'Happy Hour & Partner Awards 5:00\u20136:30 PM', skip:/happy hour|partner awards/i}
 ];
 const DAY_ORDER_IDX = {sat:0,sun:1,mon:2,tue:3,wed:4};
 // Merges a person's normal day/slot assignments with their scan duties into
 // one chronological list. includeAll=true keeps break/free rows too (for
 // on-screen display); includeAll=false drops them (for ICS/PDF export).
-function lunchTag(r){ return (r.tags||[]).map(t=>` <span style="display:inline-block;background:#fff4d6;border:1px solid #e8cf8a;color:#7a5a00;border-radius:10px;padding:0 8px;font-size:11.5px;white-space:nowrap">${t.icon} ${esc(t.text)}</span>`).join(''); }
+function lunchTag(r){ return (r.tags||[]).map(t=>` <span style="display:inline-block;background:#fff4d6;border:1px solid #e8cf8a;color:#7a5a00;border-radius:10px;padding:0 8px;font-size:11.5px;white-space:nowrap">${esc(t.text)}</span>`).join(''); }
 function getScheduleRows(personId, includeAll){
   const entries = [];
   const pInfo = getPartnerPlanInfo(personId);
