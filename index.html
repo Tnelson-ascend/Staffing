@@ -67,6 +67,7 @@
   #mri-app .badge.ok{background:#E4F0E8;color:var(--green);}
   #mri-app .badge.short{background:#FBE7E3;color:var(--red);}
   #mri-app .badge.over{background:#FCEFD9;color:var(--amber-dk);}
+  @media print{ .no-print, #admin-bar{display:none !important} @page{size:landscape;margin:.4in} }
   #mri-app .pill{display:inline-block;padding:3px 9px;border-radius:100px;font-size:11.5px;background:var(--paper-2);color:var(--ink-soft);font-weight:600;}
   #mri-app .flap{background:var(--ink);color:#fff;border-radius:4px;padding:4px 8px;font-family:'Work Sans',monospace;font-weight:700;font-size:12px;letter-spacing:.03em;}
   #mri-app .muted{color:var(--ink-soft);font-size:12.5px;}
@@ -2935,6 +2936,7 @@ function getTeammates(personId, ref){
 
 // ---------- render dispatch ----------
 function render(){
+  if(POD_VIEW){ renderPodRoster(); return; }
   if(!isAdmin){ renderStaffView(); return; }
   navEl.style.display = '';
   if(saveStatus.textContent==='view-only schedule directory') saveStatus.textContent='';
@@ -2976,12 +2978,68 @@ function renderAdminBar(){
     bar.className = 'admin-bar';
     root.insertBefore(bar, navEl);
   }
-  bar.innerHTML = `<span>Admin mode <span style="opacity:.75;font-weight:400">(Data v${SEED_VERSION} · ${state.staff.length} staff)</span></span><button class="btn sm ghost" id="admin-logout">Switch to Staff View</button>`;
+  bar.innerHTML = `<span>Admin mode <span style="opacity:.75;font-weight:400">(Data v${SEED_VERSION} · ${state.staff.length} staff)</span></span><span><a href="?pods" target="_blank" style="color:inherit;margin-right:14px;font-size:13px">Pod Roster (shareable) \u2197</a><button class="btn sm ghost" id="admin-logout">Switch to Staff View</button></span>`;
   document.getElementById('admin-logout').onclick = async ()=>{
     try{ await supabase.auth.signOut(); }catch(e){}
     isAdmin = false;
     render();
   };
+}
+
+// ---------- POD ROSTER (public, shareable: open the board with ?pods) ----------
+// Who is staffing each demo pod, by day and time, so Sales can book client demos.
+const POD_VIEW = /[?&]pods\b/.test(location.search);
+let podRosterDay = null, podRosterQuery = '';
+function renderPodRoster(){
+  navEl.style.display = 'none';
+  const bar = document.getElementById('admin-bar'); if(bar) bar.remove();
+  saveStatus.textContent = 'pod roster';
+  if(!podRosterDay || !getDay(podRosterDay)) podRosterDay = (state.days.find(d=>state.stations.some(s=>s.type==='pod' && s.activeDayIds.includes(d.id)))||state.days[0]).id;
+  const day = getDay(podRosterDay);
+  const podDays = state.days.filter(d=>state.stations.some(s=>s.type==='pod' && s.activeDayIds.includes(d.id)));
+  const slots = day.slots.filter(sl=>sl.type==='coverage' && sl.start && sl.end);
+  const q = podRosterQuery.trim().toLowerCase();
+  const pods = state.stations.filter(s=>s.type==='pod' && s.activeDayIds.includes(day.id))
+    .sort((a,b)=>(a.podNumber||999)-(b.podNumber||999));
+  const peopleAt = (stn, sl)=> state.staff.filter(p=>{ const a = computeAssignment(p.id, day.id, sl.id); return a && a.type==='station' && a.stationId===stn.id; }).sort(byFirstName);
+  const rows = pods.map(stn=>{
+    const cells = slots.map(sl=>peopleAt(stn, sl).map(p=>p.name));
+    const key = c=>c.join('|');
+    const merged = [];
+    cells.forEach((c,i)=>{
+      const last = merged[merged.length-1];
+      if(last && key(last.names)===key(c)) { last.span++; last.end = slots[i].end; }
+      else merged.push({names:c, span:1, start:slots[i].start, end:slots[i].end, label:slotTimeOnly(slots[i].label)});
+    });
+    return {stn, merged, all:[...new Set(cells.flat())]};
+  }).filter(r=>!q || (r.stn.name+' '+(r.stn.demos||'')+' '+r.stn.podNumber).toLowerCase().includes(q) || r.all.some(n=>n.toLowerCase().includes(q)));
+  const hm = t=>{ const m = startMinutes(t), h = Math.floor(m/60), mm = m%60; return ((h+11)%12+1)+':'+String(mm).padStart(2,'0')+(h<12?' AM':' PM'); };
+  const th = slots.map(sl=>`<th style="min-width:104px;font-size:11.5px;text-align:center">${esc(hm(sl.start))}–${esc(hm(sl.end))}<div class="muted" style="font-weight:400;font-size:10.5px">${esc(slotNameOnly(sl.label).replace(/\s*\(.*?\)\s*/g,' ').trim())}</div></th>`).join('');
+  const body = rows.map(r=>{
+    let tds = '', idx = 0;
+    r.merged.forEach(m=>{
+      tds += `<td colspan="${m.span}" style="vertical-align:top;font-size:12px;line-height:1.5;border-left:1px solid #dfe5ec;${m.names.length?'background:#eef7e8':'background:#fafafa;color:#aaa'}">${m.names.length ? m.names.map(n=>esc(n)).join('<br>') : '—'}</td>`;
+    });
+    return `<tr><th style="text-align:left;vertical-align:top;position:sticky;left:0;background:#fff;width:230px;min-width:230px;max-width:230px;white-space:normal;text-transform:none;letter-spacing:0;z-index:1"><div style="font-size:13px;color:var(--ink,#1c2b36)">${r.stn.podNumber?('Pod '+esc(r.stn.podNumber)+' · '):''}${esc(r.stn.name)}</div>${r.stn.demos?`<div class="muted" style="font-weight:400;font-size:11px;white-space:normal">${esc(r.stn.demos)}</div>`:''}</th>${tds}</tr>`;
+  }).join('');
+  bodyEl.innerHTML = `
+    <div class="panel pod-roster">
+      <div class="flex-between" style="gap:10px;flex-wrap:wrap">
+        <div><h2 style="margin:0">Ascend 2026 — Who’s at each demo pod</h2>
+        <div class="muted">Las Vegas · Oct 18–21. Green cells show who is staffing the pod during that time. Times can still shift; this page always shows the current plan.</div></div>
+        <div class="row no-print"><button class="btn sm ghost" id="pr-print">Print / Save as PDF</button></div>
+      </div>
+      <div class="row no-print" style="margin:12px 0 4px;gap:8px;flex-wrap:wrap">
+        ${podDays.map(d=>`<button class="btn sm ${d.id===day.id?'active':'ghost'}" data-prday="${d.id}">${esc(d.name)}</button>`).join('')}
+        <input type="text" id="pr-search" placeholder="Search pod, topic or person…" value="${esc(podRosterQuery)}" style="width:260px;margin-left:8px">
+      </div>
+      <h3 style="margin:10px 0 6px">${esc(day.name)}, ${esc(day.date||'')}</h3>
+      <div class="scrollx"><table style="border-collapse:collapse"><thead><tr><th style="text-align:left">Pod</th>${th}</tr></thead><tbody>${body || '<tr><td class="muted">No matching pods.</td></tr>'}</tbody></table></div>
+    </div>`;
+  bodyEl.querySelectorAll('[data-prday]').forEach(b=>b.onclick=()=>{ podRosterDay = b.dataset.prday; renderPodRoster(); });
+  const se = document.getElementById('pr-search');
+  se.oninput = e=>{ podRosterQuery = e.target.value; const pos = e.target.selectionStart; renderPodRoster(); const n = document.getElementById('pr-search'); n.focus(); n.setSelectionRange(pos,pos); };
+  document.getElementById('pr-print').onclick = ()=>window.print();
 }
 
 // ---------- STAFF VIEW (read-only directory, sent to conference staff) ----------
