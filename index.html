@@ -2467,6 +2467,58 @@ function stationsActiveOnDay(dayId){
 }
 
 // Compute a person's assignment for a given day/slot, respecting manual overrides.
+// ---- "Away" tracking: scanning, wayfinding/posts, partner sessions and partner
+// walk-throughs take a person away from their pod/desk even though they are not
+// stored as station overrides. Assign Staff and Coverage use these so the
+// board reflects them.
+function buildAwayIndex(dayId){
+  const idx = {};
+  const push = (pid, a, b, label)=>{ if(!pid) return; (idx[pid] = idx[pid] || []).push({startMin:a, endMin:b, label}); };
+  for(const sid in state.scanAssignments){
+    const stn = getStation(sid); const w = stn && getScanWindow(stn);
+    if(w && w.dayId===dayId) push(state.scanAssignments[sid], w.startMin, w.endMin, 'Scanning');
+  }
+  (state.wayfindingSlots||[]).forEach(x=>{
+    const w = getWayfindingWindow(x);
+    if(w && w.dayId===dayId) push(x.assignedId, w.startMin, w.endMin, x.title||'Wayfinding');
+  });
+  if(dayId===PARTNER_SLOT.dayId){
+    const sw = getPartnerSessionWindow(), plans = getPartnerPlans();
+    for(const pid in plans){
+      const pl = plans[pid], per = getStaff(pid);
+      if(!per || !per.isSales) continue;
+      if(pl.sessionId && sw) push(pid, sw.startMin, sw.endMin, 'Partner session');
+    }
+  }
+  state.staff.forEach(per=>{
+    if(!per.isSales) return;
+    const info = getPartnerPlanInfo(per.id);
+    if(info && info.walk && info.walk.dayId===dayId) push(per.id, info.walk.startMin, info.walk.endMin, 'Partner walk-through');
+  });
+  return idx;
+}
+function awayDuring(idx, pid, startMin, endMin){
+  return (idx[pid]||[]).filter(e=>e.startMin<endMin && e.endMin>startMin);
+}
+function fmtAway(e){ return e.label+' '+fmtMin(e.startMin)+'\u2013'+fmtMin(e.endMin); }
+function slotWindow(dayId, slotId){
+  const d = getDay(dayId), sl = d && d.slots.find(x=>x.id===slotId);
+  return sl ? {startMin:startMinutes(sl.start), endMin:startMinutes(sl.end)} : null;
+}
+// People assigned to a station in a slot, split into those on site and those
+// currently away (scanning, posted, partner session/walk).
+function stationPresence(dayId, slotId, stationId, idx){
+  const w = slotWindow(dayId, slotId);
+  const here = [], away = [];
+  state.staff.forEach(p=>{
+    const a = computeAssignment(p.id, dayId, slotId);
+    if(!(a.type==='station' && a.stationId===stationId)) return;
+    const r = w ? awayDuring(idx, p.id, w.startMin, w.endMin) : [];
+    if(r.length) away.push({person:p, reasons:r}); else here.push(p);
+  });
+  return {here, away};
+}
+
 function computeAssignment(staffId, dayId, slotId){
   const key = staffId+'|'+dayId+'|'+slotId;
   if(state.overrides[key] !== undefined) return state.overrides[key]; // {type, stationId?, label?}
@@ -2509,6 +2561,7 @@ function getCandidates(dayId, slotId, stationId){
     return a.type==='station' && a.stationId===stationId;
   });
   const deptsHere = new Set(currentAtStation.map(p=>p.dept));
+  const _awayIdx = buildAwayIndex(dayId);
   const candidates = [];
   state.staff.forEach(p=>{
     const a = computeAssignment(p.id, dayId, slotId);
@@ -2538,7 +2591,10 @@ function getCandidates(dayId, slotId, stationId){
     } else { status = 'Unavailable'; base = 4; }
     if(qualified) status += ' · qualified for this station (home station)';
     const deptMatch = deptsHere.has(p.dept);
-    const tier = base*10 + (qualified?0:(deptMatch?1:2));
+    let tier = base*10 + (qualified?0:(deptMatch?1:2));
+    const _w = slotWindow(dayId, slotId);
+    const _busy = _w ? awayDuring(_awayIdx, p.id, _w.startMin, _w.endMin) : [];
+    if(_busy.length){ status = 'Busy: '+fmtAway(_busy[0])+' \u2014 '+status; tier += 100; }
     candidates.push({person:p, status, tier, qualified});
   });
   candidates.sort((a,b)=> a.tier-b.tier || a.person.name.localeCompare(b.person.name));
@@ -2556,7 +2612,9 @@ function renderFillPanel(){
   const slot = day.slots.find(s=>s.id===slotId);
   const station = getStation(stationId);
   if(!day || !slot || !station){ closeFillPanel(); return; }
-  const count = state.staff.filter(p=>{ const a=computeAssignment(p.id,dayId,slotId); return a.type==='station'&&a.stationId===stationId; }).length;
+  const _pres = stationPresence(dayId, slotId, stationId, buildAwayIndex(dayId));
+  const count = _pres.here.length;
+  const awayNote = _pres.away.length ? ' ('+_pres.away.length+' assigned but away: '+_pres.away.map(x=>x.person.name+' \u2014 '+fmtAway(x.reasons[0])).join('; ')+')' : '';
   const candidates = getCandidates(dayId, slotId, stationId);
   el.style.display='flex';
   el.innerHTML = `
@@ -2565,7 +2623,7 @@ function renderFillPanel(){
         <h2>Find fill: ${esc(station.name)}</h2>
         <button class="btn sm ghost" id="fill-close">Close</button>
       </div>
-      <div class="muted" style="margin:6px 0 10px">${esc(day.name)} · ${esc(slot.label)} · currently <strong>${count} / ${station.required}</strong> assigned</div>
+      <div class="muted" style="margin:6px 0 10px">${esc(day.name)} · ${esc(slot.label)} · currently <strong>${count} / ${station.required}</strong> on site${esc(awayNote)}</div>
       <div class="scrolly" style="max-height:360px">
       ${candidates.length ? candidates.map(c=>`
         <div class="fill-row">
@@ -3232,6 +3290,7 @@ function renderGrid(){
 
   function drawRows(filter){
     const rows = document.getElementById('grid-rows');
+    const gridAway = buildAwayIndex(day.id);
     const q = (filter||'').trim().toLowerCase();
     const countEl = document.getElementById('grid-count');
     if(!q){
@@ -3256,6 +3315,8 @@ function renderGrid(){
           const overridden = state.overrides[key]!==undefined;
           const cellStation = a.type==='station' ? getStation(a.stationId) : null;
           const cellColor = getCategoryColor(cellStation);
+          const _w = slotWindow(day.id, s.id);
+          const awayTags = _w ? awayDuring(gridAway, p.id, _w.startMin, _w.endMin) : [];
           return `<td>
             <select class="grid-cell-select" data-pid="${p.id}" data-slot="${s.id}" style="${overridden?'border-color:var(--amber-dk);font-weight:700;':''}${cellColor?`background:${cellColor};`:''}">
               <option value="__auto__">${assignmentLabel(computeAssignmentAuto(p.id,day.id,s.id))} ${overridden?'':''}</option>
@@ -3263,6 +3324,7 @@ function renderGrid(){
               <option value="free" ${a.type==='free'&&overridden?'selected':''}>Free / Bench</option>
               ${overridden?'<option value="__reset__">↺ Reset to automatic</option>':''}
             </select>
+            ${awayTags.map(t=>`<div style="font-size:10.5px;background:#fff3cd;border:1px solid #e0b84a;color:#7a5600;border-radius:4px;padding:1px 4px;margin-top:3px">${esc(fmtAway(t))}</div>`).join('')}
             ${(s.type==='coverage' && a.type==='station') ? `<button class="btn sm ghost" style="padding:2px 4px;font-size:10.5px;margin-top:3px;width:100%;display:block;box-sizing:border-box" data-fill-day="${day.id}" data-fill-slot="${s.id}" data-fill-station="${a.stationId}" title="Find someone to fill this spot if reassigned">Fill</button>` : ''}
           </td>`;
         }).join('')}
@@ -3311,6 +3373,7 @@ function renderCoverage(){
   const day = getDay(state.activeDayId);
   const stations = stationsActiveOnDay(day.id).filter(s=>s.type!=='session');
   const coverageSlots = day.slots.filter(s=>s.type==='coverage');
+  const covAway = buildAwayIndex(day.id);
 
   bodyEl.innerHTML = `
     <div class="day-tabs" id="cov-daytabs"></div>
@@ -3320,14 +3383,13 @@ function renderCoverage(){
         <table><thead><tr><th>Station</th><th>Required</th>${coverageSlots.map(s=>`<th>${esc(s.label)}</th>`).join('')}</tr></thead>
         <tbody>${stations.map(st2=>{
           return `<tr><td>${esc(st2.name)}</td><td class="mono">${st2.required}</td>${coverageSlots.map(s=>{
-            const count = state.staff.filter(p=>{
-              const a = computeAssignment(p.id, day.id, s.id);
-              return a.type==='station' && a.stationId===st2.id;
-            }).length;
+            const pres = stationPresence(day.id, s.id, st2.id, covAway);
+            const count = pres.here.length;
             let cls = 'ok';
             if(count < st2.required) cls='short';
             else if(count > st2.required) cls='over';
-            return `<td><button class="badge badge-btn ${cls}" data-fill-day="${day.id}" data-fill-slot="${s.id}" data-fill-station="${st2.id}">${count} / ${st2.required}</button></td>`;
+            const awayTitle = pres.away.map(x=>x.person.name+' \u2014 '+fmtAway(x.reasons[0])).join('\n');
+            return `<td><button class="badge badge-btn ${cls}" data-fill-day="${day.id}" data-fill-slot="${s.id}" data-fill-station="${st2.id}">${count} / ${st2.required}</button>${pres.away.length?`<div style="font-size:10.5px;color:#a15c00;margin-top:2px;cursor:help" title="${esc(awayTitle)}">${pres.away.length} away</div>`:''}</td>`;
           }).join('')}</tr>`;
         }).join('')}</tbody></table>
       </div>
@@ -4565,16 +4627,14 @@ function exportMasterCSV(){
   downloadCSV('ascend_master_schedule.csv', rows);
 }
 function exportCoverageCSV(){
-  const rows = [['Day','Station','Time Slot','Assigned','Required']];
+  const rows = [['Day','Station','Time Slot','On site','Required','Assigned but away']];
   state.days.forEach(d=>{
+    const awayIdx = buildAwayIndex(d.id);
     const stations = stationsActiveOnDay(d.id);
     d.slots.filter(s=>s.type==='coverage').forEach(s=>{
       stations.forEach(st2=>{
-        const count = state.staff.filter(p=>{
-          const a = computeAssignment(p.id,d.id,s.id);
-          return a.type==='station' && a.stationId===st2.id;
-        }).length;
-        rows.push([d.name, st2.name, s.label, count, st2.required]);
+        const pres = stationPresence(d.id, s.id, st2.id, awayIdx);
+        rows.push([d.name, st2.name, s.label, pres.here.length, st2.required, pres.away.length]);
       });
     });
   });
