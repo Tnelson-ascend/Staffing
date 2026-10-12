@@ -2815,10 +2815,12 @@ function minToHHMM(total){
   let m = ((total%1440)+1440)%1440;
   return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 }
+const LUNCH_START = 12*60, LUNCH_END = 13*60+30, LUNCH_TEXT = 'Lunch 12:00\u20131:30 PM';
 const DAY_ORDER_IDX = {sat:0,sun:1,mon:2,tue:3,wed:4};
 // Merges a person's normal day/slot assignments with their scan duties into
 // one chronological list. includeAll=true keeps break/free rows too (for
 // on-screen display); includeAll=false drops them (for ICS/PDF export).
+function lunchTag(r){ return r.lunch ? ` <span style="display:inline-block;background:#fff4d6;border:1px solid #e8cf8a;color:#7a5a00;border-radius:10px;padding:0 8px;font-size:11.5px;white-space:nowrap">\ud83c\udf74 ${LUNCH_TEXT}</span>` : ''; }
 function getScheduleRows(personId, includeAll){
   const entries = [];
   const pInfo = getPartnerPlanInfo(personId);
@@ -2873,6 +2875,13 @@ function getScheduleRows(personId, includeAll){
       sortMin: startMinutes(s.start), isScan:false, start:s.start||'', end:s.end||'', color:CATEGORY_COLORS.wayfinding,
       ref: {kind:'wf', slotId:s.id}
     });
+  });
+  // Lunch is 12:00\u20131:30 every day. Flag any row that runs into it so the
+  // schedule can say so right after the assignment.
+  entries.forEach(e=>{
+    if(!e.start || !e.end || e.dayId==='sun' || e.dayId==='wed') return;
+    const a = startMinutes(e.start), b = startMinutes(e.end);
+    if(a<LUNCH_END && b>LUNCH_START && !/lunch/i.test(e.text+' '+e.slotLabel)) e.lunch = true;
   });
   entries.sort((a,b)=> (DAY_ORDER_IDX[a.dayId]-DAY_ORDER_IDX[b.dayId]) || (a.sortMin-b.sortMin));
   return entries;
@@ -3007,7 +3016,7 @@ function renderStaffView(){
     if(!p){ detailEl.innerHTML = '<div class="muted">Search and select your name above to view your schedule.</div>'; return; }
     const schedRows = getScheduleRows(p.id, true);
     const rowsHtml = schedRows.map((r,i)=>
-      `<tr><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}${r.ref?`<div><button class="btn sm ghost" data-who="${i}" style="margin-top:4px;font-size:11.5px;padding:1px 9px">Who\u2019s with me \u25be</button></div><div class="who-box" data-who-box="${i}" style="display:none"></div>`:''}</td></tr>`
+      `<tr><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}${lunchTag(r)}${r.ref?`<div><button class="btn sm ghost" data-who="${i}" style="margin-top:4px;font-size:11.5px;padding:1px 9px">Who\u2019s with me \u25be</button></div><div class="who-box" data-who-box="${i}" style="display:none"></div>`:''}</td></tr>`
     ).join('');
     detailEl.innerHTML = `
       <div class="person-card">
@@ -4438,7 +4447,7 @@ function renderPeople(){
   if(!p){ detailEl.innerHTML = '<div class="muted">Search and select a person above to view and export their schedule.</div>'; return; }
 
   const rowsHtml = getScheduleRows(p.id, true).map(r=>
-    `<tr><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}</td></tr>`
+    `<tr><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}${lunchTag(r)}</td></tr>`
   ).join('');
 
   detailEl.innerHTML = `
@@ -4487,7 +4496,7 @@ function downloadICS(person){
     lines.push('DTSTART:'+dtStart);
     lines.push('DTEND:'+dtEnd);
     lines.push('SUMMARY:'+r.text);
-    lines.push('DESCRIPTION:'+r.slotLabel);
+    lines.push('DESCRIPTION:'+r.slotLabel+(r.lunch?' \\n'+LUNCH_TEXT:''));
     lines.push('END:VEVENT');
   });
   lines.push('END:VCALENDAR');
@@ -4541,7 +4550,7 @@ async function downloadPDF(person){
 
     rows.forEach(r=>{
       const timeWrapped = doc.splitTextToSize(r.slotLabel, contentW);
-      const labelWrapped = doc.splitTextToSize(r.text, contentW - 14);
+      const labelWrapped = doc.splitTextToSize(r.text+(r.lunch?'  ('+LUNCH_TEXT+')':''), contentW - 14);
       const lineH = 12*timeWrapped.length + 13*labelWrapped.length + 10;
       ensureRoom(lineH);
       doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
