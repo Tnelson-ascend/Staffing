@@ -2815,12 +2815,18 @@ function minToHHMM(total){
   let m = ((total%1440)+1440)%1440;
   return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 }
-const LUNCH_START = 12*60, LUNCH_END = 13*60+30, LUNCH_TEXT = 'Lunch 12:00\u20131:30 PM';
+// Time-of-day tags appended to schedule rows that overlap them. Edit here.
+// icon + text show after the assignment; `skip` = don't tag rows already named that.
+const DAY_TAGS = [
+  {days:['mon','tue'], start:'12:00', end:'13:30', icon:'\ud83c\udf74', text:'Lunch 12:00\u20131:30 PM', skip:/lunch/i},
+  {days:['sun'], start:'17:00', end:'19:00',  text:'Welcome Reception 5:00\u20137:00 PM', skip:/welcome reception/i},
+  {days:['tue'], start:'17:00', end:'18:30',  text:'Happy Hour & Partner Awards 5:00\u20136:30 PM', skip:/happy hour|partner awards/i}
+];
 const DAY_ORDER_IDX = {sat:0,sun:1,mon:2,tue:3,wed:4};
 // Merges a person's normal day/slot assignments with their scan duties into
 // one chronological list. includeAll=true keeps break/free rows too (for
 // on-screen display); includeAll=false drops them (for ICS/PDF export).
-function lunchTag(r){ return r.lunch ? ` <span style="display:inline-block;background:#fff4d6;border:1px solid #e8cf8a;color:#7a5a00;border-radius:10px;padding:0 8px;font-size:11.5px;white-space:nowrap">\ud83c\udf74 ${LUNCH_TEXT}</span>` : ''; }
+function lunchTag(r){ return (r.tags||[]).map(t=>` <span style="display:inline-block;background:#fff4d6;border:1px solid #e8cf8a;color:#7a5a00;border-radius:10px;padding:0 8px;font-size:11.5px;white-space:nowrap">${t.icon} ${esc(t.text)}</span>`).join(''); }
 function getScheduleRows(personId, includeAll){
   const entries = [];
   const pInfo = getPartnerPlanInfo(personId);
@@ -2876,12 +2882,13 @@ function getScheduleRows(personId, includeAll){
       ref: {kind:'wf', slotId:s.id}
     });
   });
-  // Lunch is 12:00\u20131:30 every day. Flag any row that runs into it so the
+  // Tags (lunch, receptions) are defined in DAY_TAGS. Flag any row that runs into it so the
   // schedule can say so right after the assignment.
   entries.forEach(e=>{
-    if(!e.start || !e.end || e.dayId==='sun' || e.dayId==='wed') return;
+    if(!e.start || !e.end) return;
     const a = startMinutes(e.start), b = startMinutes(e.end);
-    if(a<LUNCH_END && b>LUNCH_START && !/lunch/i.test(e.text+' '+e.slotLabel)) e.lunch = true;
+    const tags = DAY_TAGS.filter(t=>t.days.includes(e.dayId) && a<startMinutes(t.end) && b>startMinutes(t.start) && !t.skip.test(e.text+' '+e.slotLabel));
+    if(tags.length) e.tags = tags;
   });
   entries.sort((a,b)=> (DAY_ORDER_IDX[a.dayId]-DAY_ORDER_IDX[b.dayId]) || (a.sortMin-b.sortMin));
   return entries;
@@ -4496,7 +4503,7 @@ function downloadICS(person){
     lines.push('DTSTART:'+dtStart);
     lines.push('DTEND:'+dtEnd);
     lines.push('SUMMARY:'+r.text);
-    lines.push('DESCRIPTION:'+r.slotLabel+(r.lunch?' \\n'+LUNCH_TEXT:''));
+    lines.push('DESCRIPTION:'+r.slotLabel+((r.tags||[]).map(t=>' \\n'+t.text).join('')));
     lines.push('END:VEVENT');
   });
   lines.push('END:VCALENDAR');
@@ -4550,7 +4557,7 @@ async function downloadPDF(person){
 
     rows.forEach(r=>{
       const timeWrapped = doc.splitTextToSize(r.slotLabel, contentW);
-      const labelWrapped = doc.splitTextToSize(r.text+(r.lunch?'  ('+LUNCH_TEXT+')':''), contentW - 14);
+      const labelWrapped = doc.splitTextToSize(r.text+((r.tags||[]).map(t=>'  ('+t.text+')').join('')), contentW - 14);
       const lineH = 12*timeWrapped.length + 13*labelWrapped.length + 10;
       ensureRoom(lineH);
       doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
