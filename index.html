@@ -1,4 +1,5 @@
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ascend Staffing Board</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -67,6 +68,28 @@
   #mri-app .badge.ok{background:#E4F0E8;color:var(--green);}
   #mri-app .badge.short{background:#FBE7E3;color:var(--red);}
   #mri-app .badge.over{background:#FCEFD9;color:var(--amber-dk);}
+  .sv-tabs{display:none}
+  @media (max-width:700px){
+    #mri-app .sv-tabs{display:flex;gap:6px;overflow-x:auto;margin:12px 0 4px;padding-bottom:2px}
+    #mri-app .sv-tabs .btn{flex:1 0 auto;min-height:40px;padding:6px 10px}
+    #mri-app #sv-search, #mri-app #pr-search{width:100% !important;margin-left:0 !important;min-height:42px;font-size:16px}
+    #mri-app .person-card .btn, #mri-app #sv-results .btn{min-height:40px}
+    #mri-app .person-card .flex-between{flex-direction:column;align-items:flex-start;gap:10px}
+    #mri-app .person-card .flex-between .row{width:100%}
+    #mri-app .person-card .flex-between .row .btn{flex:1 1 140px}
+    #mri-app .sv-table, #mri-app .sv-table tbody, #mri-app .sv-table tr, #mri-app .sv-table td{display:block;width:100%}
+    #mri-app .sv-table thead{display:none}
+    #mri-app .sv-table tr{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;padding:8px 10px;background:#fff}
+    #mri-app .sv-table td{border:none !important;padding:0}
+    #mri-app .sv-table td:first-child{display:none}
+    #mri-app .sv-table td:nth-child(2){font-weight:700;font-size:13px;color:var(--ink-soft);padding-bottom:5px}
+    #mri-app .sv-table td:nth-child(3){border-radius:8px;padding:9px 11px;font-size:15px;line-height:1.45}
+    #mri-app .sv-table tr.sv-hide{display:none}
+    #mri-app .scrollx, #mri-app .scrolly{overflow:visible;max-height:none;border:none !important;padding:0 !important}
+  }
+  #mri-app .sv-banner{border-radius:10px;padding:10px 14px;margin:12px 0 4px;background:#044d66;color:#fff;font-size:14px;line-height:1.5}
+  #mri-app .sv-banner b{font-size:15px}
+  #mri-app .sv-offline{background:#fff4d6;border:1px solid #e8cf8a;color:#7a5a00;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
   @media print{ .no-print, #admin-bar{display:none !important} @page{size:landscape;margin:.4in} }
   #mri-app .pill{display:inline-block;padding:3px 9px;border-radius:100px;font-size:11.5px;background:var(--paper-2);color:var(--ink-soft);font-weight:600;}
   #mri-app .flap{background:var(--ink);color:#fff;border-radius:4px;padding:4px 8px;font-family:'Work Sans',monospace;font-weight:700;font-size:12px;letter-spacing:.03em;}
@@ -1057,7 +1080,7 @@ const TABS = [
 // starts at CURRENT SEED_VERSION already (via defaultState), so patches
 // only matter for boards that were saved before that patch existed.
 const STATION_DAY_SLOT_MAP = {"sesst_mon_affordable_public_housing_keynote_innovation_to_su":["mon","mon_sess_slot_1"],"sesst_mon_industry_trends_and_challenges_in_affordable_publi":["mon","mon_sess_slot_3"],"sesst_mon_pha_pro_101_applying_the_latest_hud_regulatory_cha":["mon","mon_sess_slot_4"],"sesst_mon_ama_migrating_to_mri_affordable_housing":["mon","mon_sess_slot_6"],"sesst_mon_affordable_housing_101_key_features_to_maximize_yo":["mon","mon_sess_slot_6"],"sesst_mon_pha_pro_101_a_practical_integration_guide_for_pha_":["mon","mon_sess_slot_6"],"sesst_tue_workflow_roundtable_affordable_public_housing":["tue","tue_sess_slot_1"],"sesst_tue_ama_migrating_to_pha_pro":["tue","tue_sess_slot_1"],"sesst_tue_ama_asset_management_accounting_solutions_for_affo":["tue","tue_sess_slot_2"],"sesst_tue_affordable_public_housing_201_adoption_strategies_":["tue","tue_sess_slot_2"],"sesst_tue_campfire_navigating_external_change_internally_for":["tue","tue_sess_slot_2"],"sesst_tue_campfire_optimizing_operations_in_affordable_publi":["tue","tue_sess_slot_4"],"sesst_tue_pic_training_101_secrets_to_understanding_resolvin":["tue","tue_sess_slot_4"],"sesst_tue_pha_pro_101_practical_tips_tricks_hands_on_worksho":["tue","tue_sess_slot_5"],"sesst_wed_staying_compliant_and_preparing_for_what_s_next_bo":["wed","wed_sess_slot_1"],"sesst_wed_legacy_product_updates_tenmast_hab_and_lindsey_sof":["wed","wed_sess_slot_1"],"sesst_wed_affordable_housing_101_live_health_check_demo_with":["wed","wed_sess_slot_2"],"sesst_wed_pic_training_101_strategies_for_effective_data_cle":["wed","wed_sess_slot_2"],"sesst_wed_affordable_housing_201_masterclass_in_key_function":["wed","wed_sess_slot_3"],"sesst_wed_pha_pro_201_leveraging_report_writer_to_manage_you":["wed","wed_sess_slot_3"],"sesst_mon_investment_central_101_integrating_third_party_fin":["mon","mon_sess_slot_3"],"sesst_mon_investment_central_101_portfolio_reporting":["mon","mon_sess_slot_6"],"sesst_tue_investment_central_users_group":["tue","tue_sess_slot_2"],"sesst_tue_investment_central_301_master_data_integration_wit":["tue","tue_sess_slot_4"],"sesst_wed_investment_accounting_201_troubleshooting_real_wor":["wed","wed_sess_slot_1"],"sesst_wed_debt_management_101":["wed","wed_sess_slot_3"],"sesst_mon_ama_onlocation_for_footfall_analytics":["mon","mon_sess_slot_2"],"sesst_mon_angus_201_driving_portfolio_visibility_standardiza":["mon","mon_sess_slot_4"],"sesst_tue_angus_users_group":["tue","tue_sess_slot_2"],"sesst_tue_angus_201_angus_reporting_enhancements":["tue","tue_sess_slot_4"],"sesst_tue_ama_facilities_management_solutions":["tue","tue_sess_slot_4"],"sesst_tue_campfire_the_changing_role_of_property_facilities_":["tue","tue_sess_slot_5"],"sesst_wed_angus_201_end_to_end_coi_process_deep_dive":["wed","wed_sess_slot_1"],"sesst_wed_angus_201_managing_the_inspection_process_in_angus":["wed","wed_sess_slot_2"],"sesst_wed_angus_301_in_depth_exploration_of_data_driven_main":["wed","wed_sess_slot_3"],"sesst_mon_workshop_planning_your_2026_technology_roadmap":["mon","mon_sess_slot_4"],"sesst_tue_invite_only_executive_roundtable_rethinking_operat":["tue","tue_sess_slot_2"],"sesst_mon_mri_agora_platform_it_and_technology_team_deep_div":["mon","mon_sess_slot_2"],"sesst_mon_campfire_moving_ai_from_pilot_to_practice":["mon","mon_sess_slot_2"],"sesst_mon_ama_agora_administration":["mon","mon_sess_slot_3"],"sesst_mon_intro_to_agora_workflow_builder":["mon","mon_sess_slot_3"],"sesst_mon_campfire_governing_ai_across_the_business":["mon","mon_sess_slot_3"],"sesst_mon_agora_intelligence_orchestrator_for_accounting_and":["mon","mon_sess_slot_4"],"sesst_mon_ama_agora_workflow_builder":["mon","mon_sess_slot_4"],"sesst_mon_ama_agora_intelligence":["mon","mon_sess_slot_5"],"sesst_mon_agora_intelligence_orchestrator_for_building_opera":["mon","mon_sess_slot_6"],"sesst_mon_ama_agora_orchestrator":["mon","mon_sess_slot_6"],"sesst_tue_campfire_combatting_fraud_in_leasing_and_best_prac":["tue","tue_sess_slot_1"],"sesst_tue_agora_intelligence_orchestrator_for_renter_engagem":["tue","tue_sess_slot_2"],"sesst_tue_managing_the_agora_platform_admin_deep_dive":["tue","tue_sess_slot_4"],"sesst_tue_agora_intelligence_101_migrating_from_agora_insigh":["tue","tue_sess_slot_5"],"sesst_mon_application_studio_101_configure_personalize_pmx_p":["mon","mon_sess_slot_1"],"sesst_mon_application_studio_101_securely_access_data_create":["mon","mon_sess_slot_2"],"sesst_mon_report_studio_101_introduction_to_report_builder":["mon","mon_sess_slot_3"],"sesst_mon_application_studio_101_migrating_your_personalized":["mon","mon_sess_slot_6"],"sesst_tue_application_studio_101_configure_personalize_pmx_p_2":["tue","tue_sess_slot_1"],"sesst_tue_application_studio_101_securely_access_data_create_2":["tue","tue_sess_slot_2"],"sesst_tue_ama_learn_about_personalizing_pmx_with_application":["tue","tue_sess_slot_3"],"sesst_tue_application_studio_201_build_more_advanced_pmx_con":["tue","tue_sess_slot_5"],"sesst_wed_application_studio_201_data_builder":["wed","wed_sess_slot_1"],"sesst_wed_application_studio_deep_dive_learn_from_your_peers":["wed","wed_sess_slot_2"],"sesst_mon_commercial_keynote_innovation_to_optimize_portfoli":["mon","mon_sess_slot_1"],"sesst_mon_pmx_101_import_export_hands_on_workshop":["mon","mon_sess_slot_1"],"sesst_mon_pmx_cm_101_packets_batches_in_report_gateway_hands":["mon","mon_sess_slot_3"],"sesst_mon_ama_managing_your_payable_leases_with_prolease":["mon","mon_sess_slot_2"],"sesst_mon_latest_greatest_pmx_commercial_management_core_acc":["mon","mon_sess_slot_2"],"sesst_wed_latest_greatest_pmx_commercial_management_core_acc_2":["wed","wed_sess_slot_1"],"sesst_mon_pmx_101_intro_to_sql_hands_on_workshop":["mon","mon_sess_slot_2"],"sesst_mon_campfire_exploring_managed_services_to_scale_lease":["mon","mon_sess_slot_3"],"sesst_mon_commercial_leasing_101_introduction_to_engage_deal":["mon","mon_sess_slot_4"],"sesst_mon_pmx_201_financial_format_best_practices":["mon","mon_sess_slot_3"],"sesst_mon_table_talks_new_pmx_users":["mon","mon_sess_slot_5"],"sesst_mon_pmx_101_budgeting_and_forecasting_best_practices_a":["mon","mon_sess_slot_4"],"sesst_tue_campfire_exploring_workflow_automation_for_account":["tue","tue_sess_slot_2"],"sesst_mon_campfire_exploring_workflow_automation_for_commerc":["mon","mon_sess_slot_6"],"sesst_mon_pmx_201_job_cost_masterclass":["mon","mon_sess_slot_6"],"sesst_tue_pmx_101_import_export_hands_on_workshop_2":["tue","tue_sess_slot_1"],"sesst_tue_workflow_roundtable_accounting_investment_manageme":["tue","tue_sess_slot_1"],"sesst_tue_workflow_roundtable_commercial":["tue","tue_sess_slot_1"],"sesst_tue_ama_new_pmx_x_7_screens":["tue","tue_sess_slot_1"],"sesst_tue_campfire_best_practices_for_configuring_and_managi":["tue","tue_sess_slot_1"],"sesst_tue_prolease_suite_201_advanced_use_cases_and_reportin":["tue","tue_sess_slot_2"],"sesst_tue_table_talks_talking_challenges_in_retail_accountin":["tue","tue_sess_slot_2"],"sesst_tue_ama_pmx_payments":["tue","tue_sess_slot_2"],"sesst_tue_pmx_101_getting_started_with_ai_in_pmx_hands_on_wo":["tue","tue_sess_slot_2"],"sesst_tue_campfire_pmx_updates_and_cloud_migrations":["tue","tue_sess_slot_4"],"sesst_tue_inside_the_partnership_how_benderson_and_mri_reima":["tue","tue_sess_slot_4"],"sesst_tue_contract_intelligence_101_latest_enhancement_to_mc":["tue","tue_sess_slot_4"],"sesst_tue_pmx_301_budgeting_and_forecasting_troubleshooting_":["tue","tue_sess_slot_4"],"sesst_tue_pmx_cm_101_recoveries_best_practices_setup":["tue","tue_sess_slot_5"],"sesst_tue_table_talks_integrating_pmx_and_contract_intellige":["tue","tue_sess_slot_5"],"sesst_tue_ama_engage_tenant_portal":["tue","tue_sess_slot_5"],"sesst_tue_ama_contract_intelligence":["tue","tue_sess_slot_5"],"sesst_tue_pmx_101_best_practices_for_pmx_reporting_and_repor":["tue","tue_sess_slot_5"],"sesst_wed_latest_greatest_pmx_core_accounting_financials":["wed","wed_sess_slot_1"],"sesst_wed_pmx_201_techniques_and_tactics_to_simplify_cam_rec":["wed","wed_sess_slot_2"],"sesst_wed_fixed_asset_accounting_301_advanced_capabilities_d":["wed","wed_sess_slot_2"],"sesst_wed_pmx_201_navigating_the_database_gl_rm_and_cm_schem":["wed","wed_sess_slot_3"],"sesst_wed_pmx_201_tips_and_techniques_for_successful_bank_re":["wed","wed_sess_slot_3"],"sesst_mon_residential_keynote_innovation_to_drive_leasing_re":["mon","mon_sess_slot_1"],"sesst_mon_latest_greatest_engage":["mon","mon_sess_slot_2"],"sesst_mon_engage_101_ai_agents_for_property_teams":["mon","mon_sess_slot_3"],"sesst_mon_latest_greatest_pmx_residential_management":["mon","mon_sess_slot_6"],"sesst_mon_campfire_the_future_of_multifamily_technology_and_":["mon","mon_sess_slot_4"],"sesst_mon_pmx_rm_101_from_resident_ledger_to_general_ledger_":["mon","mon_sess_slot_4"],"sesst_tue_table_talks_residential_property_management_meetup":["tue","tue_sess_slot_3"],"sesst_tue_workflow_roundtable_residential_property_managemen":["tue","tue_sess_slot_1"],"sesst_tue_engage_protect_101_latest_enhancements_to_fight_fr":["tue","tue_sess_slot_4"],"sesst_tue_ama_engage_secure_sign":["tue","tue_sess_slot_4"],"sesst_tue_pmx_201_managing_units_in_pmx_for_market_rate_prop":["tue","tue_sess_slot_4"],"sesst_tue_campfire_resident_retention_strategies":["tue","tue_sess_slot_5"],"sesst_tue_engage_pay_101_formerly_rentpayment_payments_flexi":["tue","tue_sess_slot_5"],"sesst_wed_engage_101_migrating_from_connect_suite_to_the_eng":["wed","wed_sess_slot_1"],"sesst_wed_pmx_rm_101_managing_units_in_pmx_move_in_calendar_":["wed","wed_sess_slot_1"],"sesst_wed_pmx_rm_301_deep_dive_into_tables_and_data_structur":["wed","wed_sess_slot_2"],"sesst_wed_pmx_rm_301_troubleshooting_for_power_users":["wed","wed_sess_slot_3"],"sesst_mon_ama_understanding_your_mri_support_options":["mon","mon_sess_slot_3"],"sesst_mon_ama_mri_certification_program":["mon","mon_sess_slot_4"],"sesst_tue_table_talks_exploring_managed_services_options_ben":["tue","tue_sess_slot_4"],"sesst_mon_campfire_the_changing_landscape_of_retail":["mon","mon_sess_slot_4"],"sesst_mon_table_talks_canadian_users_meetup":["mon","mon_sess_slot_4"],"sesst_mon_affordable_public_housing_compliance_updates":["mon","mon_sess_slot_2"],"sesst_mon_building_operations_fm_keynote_innovation_to_optim":["mon","mon_sess_slot_1"],"sesst_mon_building_operations_fm_understanding_mri_s_innovat":["mon","mon_sess_slot_2"],"sesst_tue_workflow_roundtable_building_operations_fm":["tue","tue_sess_slot_1"],"sesst_mon_invite_only_executive_roundtable_ai_that_s_actuall":["mon","mon_sess_slot_6"],"sesst_mon_hold_for_mri_users_group_1":["mon","mon_sess_slot_6"],"sesst_tue_hold_for_mri_users_group_2":["tue","tue_sess_slot_5"],"sesst_mon_campfire_commercial_amenities_that_pay_off":["mon","mon_sess_slot_6"]};
-const SEED_VERSION = 52;
+const SEED_VERSION = 55;
 const SEED_PATCHES = [
   { version: 23, apply(st){
     // New "Agora Widget Ready" field on every tracked product.
@@ -2285,6 +2308,50 @@ const SEED_PATCHES = [
       if(f[p.id]) p.wedLeaveTime = f[p.id]; else delete p.wedLeaveTime;
     });
   }},
+  { version: 53, apply(st){
+    // Official "What's demoed" list per pod (zones already match).
+    const D = {
+      1:'OnLocation - Footfall Analytics, MRI Energy',
+      2:'Angus, Evolution, Voice Agent',
+      3:'Affordable Housing Management, Report Gateway',
+      4:'PHA Pro, Waitlist Check/Assistance Connect',
+      5:'UI/UX Agora Client Feedback',
+      6:'Agora Insights, Intelligence, Orchestrator, Voice Agents, Maybe WB Ask Agora',
+      7:'Agora Insights, Intelligence, Orchestrator, Voice Agents, Maybe WB Ask Agora',
+      8:'PMX - Studio Tools',
+      9:'MCI',
+      10:'Investment Accounting & FAA & Debt Management & Investor Connect/Investment Central',
+      11:'Deal flow, Engage @Work, Engage Pay, (PLE)',
+      12:'PMX - Commercial, PMX - Framework, PMX - Investment Accounting, PMX - Accounting, FAA, Ask Agora, Report Gateway',
+      13:'PMX - Residential, PMX - Framework, PMX - Accounting, Ask Agora, Report Gateway',
+      14:'Engage (CRM, Portals), Interact (CallMax), SecureSign, VLA',
+      15:'Engage Protect (Checkpoint ID, RHR, AIV, Multifamily Insurance)',
+      16:'Engage Pay'
+    };
+    st.stations.forEach(x=>{ if(x.type==='pod' && D[x.podNumber]) x.demos = D[x.podNumber]; });
+  }},
+  { version: 54, apply(st){
+    // Floor-plan positions (board pod number -> x,y on the 460x400 Pod Roster map)
+    // and zones from the Product Demo Pods floor plan. Pod names/numbers stay as on the board.
+    const M = {
+      2:[55,148,'@Work'], 1:[73,166,'@Work'], 10:[65,48,'@Work'], 9:[83,73,'@Work'],
+      5:[149,343,'Platform & Commercial'], 6:[164,373,'Platform & Commercial'], 7:[301,360,'Platform & Commercial'], 8:[318,348,'Platform & Commercial'],
+      13:[296,265,'Platform & Commercial'], 14:[320,243,'Platform & Commercial'], 12:[170,268,'Platform & Commercial'], 11:[160,245,'Platform & Commercial'],
+      15:[366,152,'Multifamily'], 16:[394,133,'Multifamily'], 3:[366,67,'Multifamily'], 4:[394,48,'Multifamily']
+    };
+    st.stations.forEach(x=>{ if(x.type==='pod' && M[x.podNumber]){ x.mapX = M[x.podNumber][0]; x.mapY = M[x.podNumber][1]; x.zone = M[x.podNumber][2]; } });
+  }},
+  { version: 55, apply(st){
+    // Pod map removed: drop the map positions and restore the original zones.
+    st.stations.forEach(x=>{
+      if(x.type!=='pod') return;
+      delete x.mapX; delete x.mapY;
+      const n = x.podNumber;
+      if(n>=1 && n<=4) x.zone = 'Facilities/AHPH';
+      else if(n>=5 && n<=12) x.zone = 'Platform & Commercial';
+      else if(n>=13 && n<=16) x.zone = 'Multifamily';
+    });
+  }},
 ];
 function applySeedPatches(st){
   const have = st.seedVersion || 0;
@@ -2346,6 +2413,14 @@ async function refreshAdminStatus(){
   isAdmin = !!session;
 }
 
+const STATE_CACHE_KEY = 'ascend_state_cache_v1';
+let offlineSavedAt = null, lastCacheWrite = 0;
+function readStateCache(){ try{ const c = JSON.parse(localStorage.getItem(STATE_CACHE_KEY)||'null'); return (c && c.data && c.data.staff) ? c : null; }catch(e){ return null; } }
+function cacheStateThrottled(){
+  if(!state || offlineSavedAt || Date.now()-lastCacheWrite < 30000) return;
+  lastCacheWrite = Date.now();
+  try{ localStorage.setItem(STATE_CACHE_KEY, JSON.stringify({t:Date.now(), data:state})); }catch(e){}
+}
 async function loadState(){
   if(!SUPABASE_CONFIGURED){
     state = defaultState();
@@ -2354,17 +2429,23 @@ async function loadState(){
     render();
     return;
   }
-  const { data, error } = await supabase.from('board_state').select('data').eq('id', 1).single();
+  let data = null, error = null;
+  try{ ({ data, error } = await supabase.from('board_state').select('data').eq('id', 1).single()); }catch(e){ error = e; }
+  let fromCache = false;
   if(error || !data){
     console.error('Ascend Staffing Board: failed to load from database', error);
-    state = defaultState();
+    // Offline / flaky Wi-Fi: fall back to the last schedule this phone saved.
+    const c = readStateCache();
+    if(c){ state = c.data; fromCache = true; offlineSavedAt = c.t; }
+    else state = defaultState();
   } else {
     state = data.data;
   }
   const before = JSON.stringify(state);
   applySeedPatches(state);
-  if(JSON.stringify(state) !== before) persist();
+  if(!fromCache && JSON.stringify(state) !== before) persist();
 
+  if(fromCache){ isAdmin = false; render(); return; } // never edit or save from an old copy
   await refreshAdminStatus();
   supabase.auth.onAuthStateChange((_event, _session)=>{ refreshAdminStatus().then(render); });
   initRealtime();
@@ -2721,7 +2802,7 @@ function hasLeftBeforeWindow(p, w){
 // WED_SCAN_NEVER: these people are never offered for Wednesday scanning.
 // WED_SCAN_IGNORE_FLIGHT: these people are offered even if the flight/leave data says they've gone.
 const WED_SCAN_ONLY = [];
-const WED_SCAN_NEVER = ['Cederick Johnson','Sam Skowron','Lauren Caiafa'];
+const WED_SCAN_NEVER = ['Cederick Johnson','Sam Skowron','Alyssa Kelley','Alyssa Kelly','Lauren Caiafa'];
 const WED_SCAN_IGNORE_FLIGHT = [];
 const _wedNames = list => new Set(list.map(n=>n.trim().toLowerCase()));
 function getScannerCandidates(station){
@@ -2936,6 +3017,7 @@ function getTeammates(personId, ref){
 
 // ---------- render dispatch ----------
 function render(){
+  if(!isAdmin) cacheStateThrottled();
   if(POD_VIEW){ renderPodRoster(); return; }
   if(!isAdmin){ renderStaffView(); return; }
   navEl.style.display = '';
@@ -3024,6 +3106,12 @@ function renderPodRoster(){
     });
     return `<tr><th style="text-align:left;vertical-align:top;position:sticky;left:0;background:#fff;width:230px;min-width:230px;max-width:230px;white-space:normal;text-transform:none;letter-spacing:0;z-index:1"><div style="font-size:13px;color:var(--ink,#1c2b36)">${r.stn.podNumber?('Pod '+esc(r.stn.podNumber)+' · '):''}${esc(r.stn.name)}</div>${r.stn.demos?`<div class="muted" style="font-weight:400;font-size:11px;white-space:normal">${esc(r.stn.demos)}</div>`:''}</th>${tds}</tr>`;
   }).join('');
+  const gridHtml = `
+      <div class="row no-print" style="margin:12px 0 4px;gap:8px;flex-wrap:wrap">
+        <input type="text" id="pr-search" placeholder="Search pod, topic or person\u2026" value="${esc(podRosterQuery)}" style="width:260px">
+      </div>
+      <h3 style="margin:10px 0 6px">${esc(day.name)}, ${esc(day.date||'')}</h3>
+      <div class="scrollx"><table style="border-collapse:collapse"><thead><tr><th style="text-align:left">Pod</th>${th}</tr></thead><tbody>${body || '<tr><td class="muted">No matching pods.</td></tr>'}</tbody></table></div>`;
   bodyEl.innerHTML = `
     <div class="panel pod-roster">
       <div class="flex-between" style="gap:10px;flex-wrap:wrap">
@@ -3033,20 +3121,55 @@ function renderPodRoster(){
       </div>
       <div class="row no-print" style="margin:12px 0 4px;gap:8px;flex-wrap:wrap">
         ${podDays.map(d=>`<button class="btn sm ${d.id===day.id?'active':'ghost'}" data-prday="${d.id}">${esc(d.name)}</button>`).join('')}
-        <input type="text" id="pr-search" placeholder="Search pod, topic or person…" value="${esc(podRosterQuery)}" style="width:260px;margin-left:8px">
       </div>
-      <h3 style="margin:10px 0 6px">${esc(day.name)}, ${esc(day.date||'')}</h3>
-      <div class="scrollx"><table style="border-collapse:collapse"><thead><tr><th style="text-align:left">Pod</th>${th}</tr></thead><tbody>${body || '<tr><td class="muted">No matching pods.</td></tr>'}</tbody></table></div>
+      ${gridHtml}
     </div>`;
   bodyEl.querySelectorAll('[data-prday]').forEach(b=>b.onclick=()=>{ podRosterDay = b.dataset.prday; renderPodRoster(); });
   const se = document.getElementById('pr-search');
-  se.oninput = e=>{ podRosterQuery = e.target.value; const pos = e.target.selectionStart; renderPodRoster(); const n = document.getElementById('pr-search'); n.focus(); n.setSelectionRange(pos,pos); };
+  if(se) se.oninput = e=>{ podRosterQuery = e.target.value; const pos = e.target.selectionStart; renderPodRoster(); const n = document.getElementById('pr-search'); n.focus(); n.setSelectionRange(pos,pos); };
   document.getElementById('pr-print').onclick = ()=>window.print();
 }
 
 // ---------- STAFF VIEW (read-only directory, sent to conference staff) ----------
 let staffViewQuery = '';
 let staffViewSelectedId = null;
+let staffViewDay = null, svTimer = null;
+const SV_ME_KEY = 'ascend_me_v1';
+// Now / Next banner from the phone's clock (people in Vegas have Pacific time).
+function svNowNext(rows){
+  const now = new Date(), pad = n=>String(n).padStart(2,'0');
+  const ymd = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+  const nm = now.getHours()*60+now.getMinutes();
+  const real = rows.filter(r=>r.start && r.end && !/^(free|break)$/i.test(String(r.text).trim()));
+  let cur = null, next = null, first = null, curEnd = 0;
+  // 1) what is on right now, extended through back-to-back rows with the same assignment
+  for(const r of real){
+    const d = getDay(r.dayId); if(!d || !d.date) continue;
+    if(!first) first = r;
+    const rs = startMinutes(r.start), re = startMinutes(r.end);
+    if(d.date===ymd && rs<=nm && nm<re){
+      if(!cur){ cur = r; curEnd = re; }
+      else if(r.text===cur.text && rs<=curEnd){ curEnd = Math.max(curEnd, re); }
+    } else if(cur && d.date===ymd && r.text===cur.text && rs<=curEnd){ curEnd = Math.max(curEnd, re); }
+  }
+  // 2) the next thing that is different from what is on now
+  for(const r of real){
+    const d = getDay(r.dayId); if(!d || !d.date) continue;
+    const rs = startMinutes(r.start);
+    const future = d.date>ymd || (d.date===ymd && rs>nm && (!cur || rs>=curEnd || r.text!==cur.text));
+    if(future && !(cur && d.date===ymd && r.text===cur.text)){ next = r; break; }
+  }
+  const t = x=>fmtMin(startMinutes(x));
+  const label = r=>esc(String(r.text).replace(/^\[(Pod|Session|Desk)\]\s*/,''));
+  const dayTag = r=>{ const d = getDay(r.dayId); return (d && d.date!==ymd) ? esc(d.name)+' ' : ''; };
+  if(!cur && !next) return '';
+  const dFirst = first && getDay(first.dayId);
+  const before = dFirst && dFirst.date > ymd;
+  let h = '';
+  if(cur) h += `<div><b>Now:</b> ${label(cur)} <span style="opacity:.8">\u00b7 until ${fmtMin(curEnd)}</span></div>`;
+  if(next) h += `<div><b>${before && !cur ? 'First up:' : 'Next:'}</b> ${label(next)} <span style="opacity:.8">\u00b7 ${dayTag(next)}${t(next.start)}</span></div>`;
+  return `<div class="sv-banner">${h}</div>`;
+}
 function renderStaffView(){
   navEl.style.display = 'none';
   const bar = document.getElementById('admin-bar');
@@ -3054,6 +3177,7 @@ function renderStaffView(){
   saveStatus.textContent = 'view-only schedule directory';
 
   bodyEl.innerHTML = `
+    ${offlineSavedAt?`<div class="sv-offline">You\u2019re offline \u2014 showing the schedule saved on this phone on ${esc(new Date(offlineSavedAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))}. It may be out of date; reconnect and refresh to update.</div>`:''}
     <div class="panel">
       <label class="small">Find your name</label>
       <input type="text" id="sv-search" placeholder="Type a name…" style="width:280px" value="${esc(staffViewQuery)}">
@@ -3069,11 +3193,12 @@ function renderStaffView(){
   const detailEl = document.getElementById('sv-detail');
   const searchEl = document.getElementById('sv-search');
 
+  if(!staffViewSelectedId){ try{ const me = localStorage.getItem(SV_ME_KEY); if(me && getStaff(me)) staffViewSelectedId = me; }catch(e){} }
   function drawResults(){
     if(!staffViewQuery){ resultsEl.innerHTML=''; return; }
     const matches = state.staff.filter(p=>p.name.toLowerCase().includes(staffViewQuery.toLowerCase())).sort(byFirstName).slice(0,10);
     resultsEl.innerHTML = matches.map(p=>`<button class="btn sm ghost" data-pid="${p.id}" style="margin:3px 4px 0 0">${esc(p.name)}</button>`).join('') || '<span class="muted">No matches</span>';
-    resultsEl.querySelectorAll('button').forEach(b=>b.onclick=()=>{ staffViewSelectedId = b.dataset.pid; drawDetail(); });
+    resultsEl.querySelectorAll('button').forEach(b=>b.onclick=()=>{ staffViewSelectedId = b.dataset.pid; staffViewDay = null; try{ localStorage.setItem(SV_ME_KEY, b.dataset.pid); }catch(e){} drawDetail(); });
   }
   searchEl.oninput = (e)=>{ staffViewQuery = e.target.value; drawResults(); };
   searchEl.focus();
@@ -3082,8 +3207,14 @@ function renderStaffView(){
     const p = staffViewSelectedId ? getStaff(staffViewSelectedId) : null;
     if(!p){ detailEl.innerHTML = '<div class="muted">Search and select your name above to view your schedule.</div>'; return; }
     const schedRows = getScheduleRows(p.id, true);
+    const dayIds = [...new Set(schedRows.map(r=>r.dayId))];
+    if(!staffViewDay || !dayIds.includes(staffViewDay)){
+      const pad = n=>String(n).padStart(2,'0'), nw = new Date(), ymd = nw.getFullYear()+'-'+pad(nw.getMonth()+1)+'-'+pad(nw.getDate());
+      const today = dayIds.find(id=>{ const d = getDay(id); return d && d.date===ymd; });
+      staffViewDay = today || dayIds[0] || null;
+    }
     const rowsHtml = schedRows.map((r,i)=>
-      `<tr><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}${lunchTag(r)}${r.ref?`<div><button class="btn sm ghost" data-who="${i}" style="margin-top:4px;font-size:11.5px;padding:1px 9px">Who\u2019s with me \u25be</button></div><div class="who-box" data-who-box="${i}" style="display:none"></div>`:''}</td></tr>`
+      `<tr class="sv-row${r.dayId!==staffViewDay?' sv-hide':''}" data-svday="${r.dayId}"><td class="pill">${esc(r.dayName)}</td><td>${esc(r.slotLabel)}</td><td${r.color?` style="background:${r.color}"`:''}>${esc(r.text)}${r.isScan?' <span class="badge over">scan duty</span>':''}${lunchTag(r)}${r.ref?`<div><button class="btn sm ghost" data-who="${i}" style="margin-top:4px;font-size:11.5px;padding:1px 9px">Who\u2019s with me \u25be</button></div><div class="who-box" data-who-box="${i}" style="display:none"></div>`:''}</td></tr>`
     ).join('');
     detailEl.innerHTML = `
       <div class="person-card">
@@ -3094,11 +3225,20 @@ function renderStaffView(){
             <button class="btn ghost" id="sv-pdf">Download PDF</button>
           </div>
         </div>
+        <div id="sv-nownext">${svNowNext(schedRows)}</div>
+        <div class="sv-tabs">${dayIds.map(id=>`<button class="btn sm ${id===staffViewDay?'active':'ghost'}" data-svtab="${id}">${esc(getDay(id).name)}</button>`).join('')}</div>
         <div class="scrollx scrolly" style="margin-top:12px">
-          <table><thead><tr><th>Day</th><th>Time</th><th>Assignment</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+          <table class="sv-table"><thead><tr><th>Day</th><th>Time</th><th>Assignment</th></tr></thead><tbody>${rowsHtml}</tbody></table>
         </div>
       </div>
     `;
+    detailEl.querySelectorAll('[data-svtab]').forEach(b=>b.onclick=()=>{
+      staffViewDay = b.dataset.svtab;
+      detailEl.querySelectorAll('[data-svtab]').forEach(x=>{ x.classList.toggle('active', x===b); x.classList.toggle('ghost', x!==b); });
+      detailEl.querySelectorAll('tr.sv-row').forEach(tr=>tr.classList.toggle('sv-hide', tr.dataset.svday!==staffViewDay));
+    });
+    if(svTimer) clearInterval(svTimer);
+    svTimer = setInterval(()=>{ const el = document.getElementById('sv-nownext'); if(el && !isAdmin) el.innerHTML = svNowNext(schedRows); else clearInterval(svTimer); }, 60000);
     detailEl.querySelectorAll('[data-who]').forEach(btn=>{
       btn.onclick = ()=>{
         const i = +btn.dataset.who, box = detailEl.querySelector('[data-who-box="'+i+'"]');
